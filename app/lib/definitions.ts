@@ -20,3 +20,13 @@ export type User = {
   created_at: Date;
   updated_at: Date;
 }
+
+export type AuthUser = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+  role: string;
+  profile_picture_url: string | null;
+};
