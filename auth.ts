@@ -2,7 +2,7 @@ import NextAuth from 'next-auth';
 import { authConfig } from './auth.config';
 import Credentials from 'next-auth/providers/credentials';
 import { z } from 'zod';
-import type { User } from '@/app/lib/definitions';
+import type { AuthUser } from '@/app/lib/definitions';
 import bcrypt from 'bcryptjs';
 import postgres from 'postgres';
 import { loadEnvConfig } from '@next/env';
@@ -12,10 +12,10 @@ loadEnvConfig(projectDir);
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: false });
 
-async function getUser(email: string): Promise<User | undefined> {
+async function getUser(email: string): Promise<AuthUser | undefined> {
     try {
 
-        const user = await sql<User[]>`SELECT * FROM users WHERE email=${email}`;
+        const user = await sql<AuthUser[]>`SELECT * FROM users WHERE email=${email}`;
         return user[0];
     } catch (error) {
         console.error('Failed to fetch user:', error);
@@ -45,9 +45,22 @@ export const { auth, signIn, signOut } = NextAuth({
             const passwordsMatch = await bcrypt.compare(password, user.password);
             console.log("Password match: ", passwordsMatch);
 
-            if (passwordsMatch) return user;
+            if (passwordsMatch) {
+
+              const authUser: AuthUser = {
+                id: user.id,
+                first_name: `${user.first_name}`,
+                last_name: `${user.last_name}`,
+                email: user.email,
+                password: user.password,
+                role: user.role,
+                profile_picture_url: user.profile_picture_url,
+              };
+
+              return authUser;
+            }
         }
-        // console.log(await bcrypt.hash("password123", 10));
+
         console.log('Invalid credentials');
         return null;
       },
