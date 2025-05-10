@@ -26,13 +26,13 @@ export const authConfig: NextAuthConfig = {
     },
     async jwt({ token, user }) {
       // console.log("HERE JWT");
-      if (user) {
+      if (user?.id) {
         token.id = user.id;
-        token.first_name = user.first_name;
-        token.last_name = user.last_name;
-        token.email = user.email;
-        token.role = user.role;
-        token.profile_picture_url = user.profile_picture_url;
+        token.first_name = user.first_name || '';
+        token.last_name = user.last_name || '';
+        token.email = user.email || '';
+        token.role = user.role || '';
+        token.profile_picture_url = user.profile_picture_url || '/fallback_avatar.png';
       }
               // console.log("TOKEN: ", token);
       return token;

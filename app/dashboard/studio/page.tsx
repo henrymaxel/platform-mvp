@@ -1,7 +1,7 @@
 //app/dashboard/studio/page.tsx
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   Save, 
   AlignLeft,
@@ -58,7 +58,7 @@ export default function WritingStudio() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
-  const [content, setContent] = useState('Test Content');
+  const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -73,7 +73,10 @@ export default function WritingStudio() {
   const debouncedContent = useDebounce(content, 2000);
 
   // Calculate word count
-  const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+  // const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+  const wordCount = useMemo(() => {
+  return content.trim().split(/\s+/).filter(word => word.length > 0).length;
+}, [content]);
   const totalProjectWords = activeProject?.chapters.reduce((sum, ch) => sum + ch.words, 0) || 0;
   const completionPercentage = activeProject?.word_count_goal 
     ? Math.min(100, Math.round((totalProjectWords / activeProject.word_count_goal) * 100))
@@ -91,46 +94,99 @@ export default function WritingStudio() {
     }
   }, [debouncedContent]);
 
-  const fetchProjects = async () => {
-    try {
-      setError(null);
-      const response = await fetch('/api/projects', {
-        credentials: 'include', // Include cookies for session
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log("STUDIO DATA: ", data);
-      // Ensure data is an array
-      if (!Array.isArray(data)) {
-        console.error('Unexpected API response format:', data);
-        throw new Error('Invalid data format received from server');
-      }
-      
-      setProjects(data);
-      
-      // Set first project as active if available
-      if (data.length > 0) {
-        setActiveProject(data[0]);
-        setExpandedProjects([data[0].id]);
-        
-        // Set first chapter as active if available
-        if (data[0].chapters && Array.isArray(data[0].chapters) && data[0].chapters.length > 0) {
-          const firstChapter = data[0].chapters[0];
-          setActiveChapter(firstChapter);
-          setContent(firstChapter.content || '');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch projects:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch projects');
-    } finally {
-      setIsLoading(false);
+// In app/dashboard/studio/page.tsx, update fetchProjects:
+// In app/dashboard/studio/page.tsx, update the fetchProjects function to add more specific logs:
+// app/dashboard/studio/page.tsx
+// Let's keep it simple - revert to your original code with minimal changes
+
+const fetchProjects = async () => {
+  try {
+    setError(null);
+    const response = await fetch('/api/projects', {
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  };
+    
+    const data = await response.json();
+    
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid data format received from server');
+    }
+    
+    setProjects(data);
+    
+    // Set the first project and chapter as active
+    if (data.length > 0) {
+      const firstProject = data[0];
+      setActiveProject(firstProject);
+      setExpandedProjects([firstProject.id]);
+      
+      if (firstProject.chapters && firstProject.chapters.length > 0) {
+        const firstChapter = firstProject.chapters[0];
+        setActiveChapter(firstChapter);
+        setContent(firstChapter.content || '');
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch projects:', error);
+    setError(error instanceof Error ? error.message : 'Failed to fetch projects');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+  // const fetchProjects = async () => {
+  //   try {
+  //     setError(null);
+  //     const response = await fetch('/api/projects', {
+  //       credentials: 'include', // Include cookies for session
+  //     });
+      
+  //     if (!response.ok) {
+  //       throw new Error(`HTTP error! status: ${response.status}`);
+  //     }
+      
+  //     const data = await response.json();
+  //     console.log("STUDIO DATA: ", data);
+  //     // Ensure data is an array
+  //     if (!Array.isArray(data)) {
+  //       console.error('Unexpected API response format:', data);
+  //       throw new Error('Invalid data format received from server');
+  //     }
+      
+  //     setProjects(data);
+  //     console.log(data);
+  //     // Set first project as active if available
+  //     if (data.length > 0) {
+  //       setActiveProject(data[0]);
+  //       setExpandedProjects([data[0].id]);
+        
+  //       // Set first chapter as active if available
+  //       // if (data[0].chapters && Array.isArray(data[0].chapters) && data[0].chapters.length > 0) {
+  //       //   const firstChapter = data[0].chapters[0];
+  //       //   setActiveChapter(firstChapter);
+  //       //   setContent(firstChapter.content || '');
+  //       // }
+
+  //       console.log(data[0])
+  //       const projectChapters = data[0].chapters || [];
+  //       if (projectChapters.length > 0) {
+  //         const firstChapter = projectChapters[0];
+  //         setActiveChapter(firstChapter);
+  //         setContent(firstChapter.content || 'NO CONTENT STUDIO PAGE DEV.');
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to fetch projects:', error);
+  //     setError(error instanceof Error ? error.message : 'Failed to fetch projects');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const saveContent = async () => {
     if (!activeChapter || !activeProject) return;
@@ -240,23 +296,25 @@ export default function WritingStudio() {
     }
   };
 
-  const switchChapter = (chapter: Chapter) => {
-    // Save current chapter before switching
-    if (activeChapter && content !== activeChapter.content) {
-      saveContent();
-    }
-    
-    setActiveChapter(chapter);
-    setContent(chapter.content || '');
-  };
+// Keep the original switchChapter function
+const switchChapter = async (chapter: Chapter) => {
+  // Save current chapter before switching
+  if (activeChapter && content !== activeChapter.content) {
+    await saveContent();
+  }
+  
+  setActiveChapter(chapter);
+  setContent(chapter.content || '');
+};
 
-  const toggleProject = (projectId: string) => {
-    setExpandedProjects(prev => 
-      prev.includes(projectId) 
-        ? prev.filter(id => id !== projectId)
-        : [...prev, projectId]
-    );
-  };
+// Keep the original toggleProject function
+const toggleProject = (projectId: string) => {
+  setExpandedProjects(prev => 
+    prev.includes(projectId) 
+      ? prev.filter(id => id !== projectId)
+      : [...prev, projectId]
+  );
+};
 
   const formatLastSaved = () => {
     if (!lastSaved) return 'Not saved yet';
@@ -522,13 +580,22 @@ export default function WritingStudio() {
               <>
                 <h1 className="text-2xl font-bold mb-4">{activeChapter.title}</h1>
                 <div style={{ minHeight: 'calc(100vh - 280px)' }}>
-                  <MarkdownEditor
+                        <textarea
+        ref={textareaRef}
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="Start writing..."
+        className="w-full h-full p-4 bg-gray-900 text-white border border-gray-700 rounded"
+        style={{ minHeight: '500px' }}
+      />
+                  {/* <MarkdownEditor
                     value={content}
                     onChange={setContent}
                     placeholder="Start writing..."
                     className="leading-relaxed"
                     onToolbarAction={handleToolbarAction}
-                  />
+                  /> */}
+
                 </div>
               </>
             ) : (

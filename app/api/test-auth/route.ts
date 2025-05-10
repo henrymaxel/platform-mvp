@@ -1,11 +1,11 @@
 //app/api/test-auth/route.ts
 import { NextResponse } from 'next/server';
-import getServerSession from 'next-auth';
-import { authOptions } from '@/auth.config';
+import { getServerSession } from 'next-auth';
+import { authConfig } from '@/auth.config';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authConfig);
     
     return NextResponse.json({
       hasSession: !!session,

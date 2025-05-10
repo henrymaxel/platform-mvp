@@ -1,5 +1,5 @@
 //app/dashboard/layout.tsx
-'use client';
+'use client'
 
 import React, { useState } from 'react';
 import { Bell, Search } from 'lucide-react';
@@ -15,7 +15,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+
+  // if (status === 'loading') {
+  //   return <div>Loading...</div>
+  // }
   const userImage = session?.user?.profile_picture_url || '/fallback_avatar.png';
   const userName = session?.user?.first_name || 'Demo';
 

@@ -7,29 +7,25 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
 export default function Dashboard() {
-  const [isHydrated, setIsHydrated] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   
-  const userName = session?.user.first_name || 'Demo';
+  const userName = session?.user?.first_name || 'Demo';
 
   useEffect(() => {
-    setIsHydrated(true);
-    console.log("DASHBOARD SESSION: ", session);
-    console.log("DASHBOARD SESSION STATUS: ", status);
     const hour = new Date().getHours();
     if (hour < 12) setGreeting('Good Morning');
     else if (hour < 18) setGreeting('Good Afternoon');
     else setGreeting('Good Evening');
 
-    const timer = setTimeout(() => setIsLoading(false), 1500);
+    const timer = setTimeout(() => setIsLoading(false), 1000);
     return () => clearTimeout(timer);
   }, []);
 
   // Loading state
-  if (!isHydrated || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-full">
         <div className="text-center">
@@ -38,6 +34,7 @@ export default function Dashboard() {
         </div>
       </div>
     );
+
   }
 
   return (

@@ -1,97 +1,77 @@
-//app/api/chapters/[id]/route.ts
+// app/api/chapters/[id]/route.ts
 import { NextResponse } from 'next/server';
-import getServerSession from 'next-auth';
-import { authConfig } from '@/auth.config';
+import { auth } from '@/auth';  // This is what you should use instead of getServerSession
 import { sql } from '@/app/lib/database';
 
+// GET: Fetch chapter content
 export async function GET(
-  request: Request,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authConfig);
+  const session = await auth();  // Use auth() instead of getServerSession()
   
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    // First, check if user owns the project this chapter belongs to
-    console.log("PARAM ID: ", params.id);
-    const [chapter] = await sql`
+    const result = await sql`
       SELECT cr.*, p.user_id 
       FROM content_references cr
       JOIN projects p ON cr.project_id = p.id
       WHERE cr.id = ${params.id} AND p.user_id = ${session.user.id}
     `;
 
-    if (!chapter) {
+    if (result.length === 0) {
       return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
     }
-    
-    return NextResponse.json({
-      ...chapter,
-      content: chapter.content || ''
-    });
+
+    return NextResponse.json(result[0]);
   } catch (error) {
-    console.error('Failed to fetch chapter:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch chapter' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch chapter' }, { status: 500 });
   }
 }
 
+// PUT: Update chapter content
 export async function PUT(
-  request: Request,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authConfig);
+  const session = await auth();  // Use auth() instead of getServerSession()
   
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const { content, word_count } = await request.json();
+    const { content, word_count } = await req.json();
 
-    // Check ownership
-    const [ownershipCheck] = await sql`
+    // Verify ownership
+    const ownership = await sql`
       SELECT cr.id 
       FROM content_references cr
       JOIN projects p ON cr.project_id = p.id
       WHERE cr.id = ${params.id} AND p.user_id = ${session.user.id}
     `;
 
-    if (!ownershipCheck) {
+    if (ownership.length === 0) {
       return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
     }
 
-    // Update chapter content and word count using transaction
-    await sql.begin(async sql => {
-      // Update chapter
-      await sql`
-        UPDATE content_references 
-        SET content = ${content}, 
-            word_count = ${word_count},
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${params.id}
-      `;
+    // Update chapter content
+    const result = await sql`
+      UPDATE content_references 
+      SET 
+        content = ${content},
+        word_count = ${word_count},
+        version_number = version_number + 1,
+        updated_at = NOW()
+      WHERE id = ${params.id}
+      RETURNING *
+    `;
 
-      // Create a draft backup
-      await sql`
-        INSERT INTO draft_backups (project_id, content_snapshot)
-        SELECT project_id, ${JSON.stringify({ content, word_count, timestamp: new Date().toISOString() })}
-        FROM content_references 
-        WHERE id = ${params.id}
-      `;
-    });
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json(result[0]);
   } catch (error) {
-    console.error('Failed to update chapter:', error);
-    return NextResponse.json(
-      { error: 'Failed to update chapter' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update chapter' }, { status: 500 });
   }
 }

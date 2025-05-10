@@ -53,7 +53,7 @@ export async function getUser(email: string): Promise<User | null> {
     return result[0];
   } catch (error) {
     console.error('Failed to fetch user:', error);
-    return null;
+    throw error;
   }
 }
 

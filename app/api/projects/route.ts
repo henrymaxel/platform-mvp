@@ -1,19 +1,20 @@
-//app/api/projects/route.ts
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth'; // Import from your auth.ts file
+import { auth } from '@/auth'; 
 import { sql } from '@/app/lib/database';
 
+// IMPORTANT: These must be named exports with async functions
+// In app/api/projects/route.ts
 export async function GET() {
   const session = await auth();
   
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  console.log(session?.user?.id);
+  
   try {
     // Get user's projects
-    const projects = await sql 
-    `SELECT 
+    const projectsResult = await sql`
+      SELECT 
         p.id, 
         p.title, 
         p.description,
@@ -23,15 +24,17 @@ export async function GET() {
         p.visibility
       FROM projects p
       WHERE p.user_id = ${session.user.id}
-      ORDER BY p.updated_at DESC;`;
+      ORDER BY p.updated_at DESC;
+    `;
 
-    // Ensure projects is an array
-    const projectsArray = Array.isArray(projects) ? projects : [];
+    // Extract projects from result
+    const projects = projectsResult.rows || projectsResult;
+    console.log("Projects array:", projects);
 
     // Get chapters for each project
     const projectsWithChapters = await Promise.all(
-      projectsArray.map(async (project) => {
-        const chapters = await sql`
+      projects.map(async (project) => {
+        const chaptersResult = await sql`
           SELECT 
             cr.id,
             cr.title,
@@ -50,45 +53,55 @@ export async function GET() {
           ORDER BY cr.chapter_number
         `;
 
-        console.log("CHAPTERS: ", chapters);
+        // Extract chapters from result
+        const chapters = chaptersResult.rows || chaptersResult;
+        console.log(`Chapters for project ${project.id}:`, chapters);
+
         return {
           ...project,
-          chapters: Array.isArray(chapters) ? chapters : []
+          chapters: chapters
         };
       })
     );
+
+    console.log("Final projects with chapters:", JSON.stringify(projectsWithChapters, null, 2));
 
     return NextResponse.json(projectsWithChapters);
   } catch (error) {
     console.error('Failed to fetch projects:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch projects' },
+      { error: 'Failed to fetch projects', details: error },
       { status: 500 }
     );
   }
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { title, description, word_count_goal } = await request.json();
 
-    const [newProject] = await sql`
+    const result = await sql`
       INSERT INTO projects (user_id, title, description, word_count_goal, status, visibility)
       VALUES (${session.user.id}, ${title}, ${description}, ${word_count_goal}, 'active', 'private')
       RETURNING id
     `;
 
+    const newProject = result[0];
+
     return NextResponse.json({ id: newProject.id });
   } catch (error) {
-    console.error('Failed to create project:', error);
+    console.error('Error in POST /api/projects:', error);
     return NextResponse.json(
-      { error: 'Failed to create project' },
+      { 
+        error: 'Failed to create project',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
