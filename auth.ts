@@ -1,67 +1,56 @@
+//auth.ts
 import NextAuth from 'next-auth';
 import { authConfig } from './auth.config';
 import Credentials from 'next-auth/providers/credentials';
-import { z } from 'zod';
-import type { AuthUser } from '@/app/lib/definitions';
+import { sql } from '@/app/lib/database';
 import bcrypt from 'bcryptjs';
-import postgres from 'postgres';
-import { loadEnvConfig } from '@next/env';
+import type { User } from '@/app/lib/definitions';
 
-const projectDir = process.cwd();
-loadEnvConfig(projectDir);
-
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: false });
-
-async function getUser(email: string): Promise<AuthUser | undefined> {
-    try {
-
-        const user = await sql<AuthUser[]>`SELECT * FROM users WHERE email=${email}`;
-        return user[0];
-    } catch (error) {
-        console.error('Failed to fetch user:', error);
-        throw error; 
-    }
+async function getUser(email: string): Promise<User | null> {
+  try {
+    const [user] = await sql<User[]>`
+      SELECT * FROM users WHERE email = ${email}
+    `;
+    return user || null;
+  } catch (error) {
+    console.error('Failed to fetch user:', error);
+    return null;
+  }
 }
 
- 
 export const { auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
       async authorize(credentials) {
-        const parsedCredentials = z
-          .object({ email: z.string().email(), password: z.string().min(8) })
-          .safeParse(credentials);
-
-        if (parsedCredentials.success) {
-            const { email, password } = parsedCredentials.data;
-            console.log('Login attempt for:', email);
-
-            const user = await getUser(email);
-            console.log('User from DB:', user);
-
-            if (!user) return null;
-            
-            const passwordsMatch = await bcrypt.compare(password, user.password);
-            console.log("Password match: ", passwordsMatch);
-
-            if (passwordsMatch) {
-
-              const authUser: AuthUser = {
-                id: user.id,
-                first_name: `${user.first_name}`,
-                last_name: `${user.last_name}`,
-                email: user.email,
-                password: user.password,
-                role: user.role,
-                profile_picture_url: user.profile_picture_url,
-              };
-
-              return authUser;
-            }
+        if (!credentials?.email || !credentials?.password) {
+          return null;
         }
 
-        console.log('Invalid credentials');
+        const user = await getUser(credentials.email as string);
+
+        if (!user || !user.password) {
+          console.log('Invalid credentials.');
+          return null;
+        }
+
+        const passwordsMatch = await bcrypt.compare(
+          credentials.password as string,
+          user.password
+        );
+
+        if (passwordsMatch) {
+          return {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            role: user.role,
+            profile_picture_url: user.profile_picture_url,
+          };
+        }
+
+        console.log('Invalid credentials.');
         return null;
       },
     }),
