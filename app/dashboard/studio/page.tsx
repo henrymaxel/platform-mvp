@@ -58,7 +58,7 @@ export default function WritingStudio() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState('Test Content');
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,7 +103,7 @@ export default function WritingStudio() {
       }
       
       const data = await response.json();
-      
+      console.log("STUDIO DATA: ", data);
       // Ensure data is an array
       if (!Array.isArray(data)) {
         console.error('Unexpected API response format:', data);
@@ -136,6 +136,7 @@ export default function WritingStudio() {
     if (!activeChapter || !activeProject) return;
     
     setIsSaving(true);
+    
     try {
       const response = await fetch(`/api/chapters/${activeChapter.id}`, {
         method: 'PUT',

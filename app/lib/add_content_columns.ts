@@ -1,5 +1,11 @@
 //app/lib/add_content_columns.ts
 import postgres from 'postgres';
+// import "dotenv/config";
+import { loadEnvConfig } from '@next/env';
+
+// const sql = postgres(process.env.POSTGRES_URL!, { ssl: false });
+const projectDir = process.cwd();
+loadEnvConfig(projectDir);
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: false });
 

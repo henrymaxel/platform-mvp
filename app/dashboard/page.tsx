@@ -11,12 +11,14 @@ export default function Dashboard() {
   const [greeting, setGreeting] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  const { data: session } = useSession();
-  const userName = session?.user?.first_name ?? 'Demo';
+  const { data: session, status } = useSession();
+  
+  const userName = session?.user.first_name || 'Demo';
 
   useEffect(() => {
     setIsHydrated(true);
-
+    console.log("DASHBOARD SESSION: ", session);
+    console.log("DASHBOARD SESSION STATUS: ", status);
     const hour = new Date().getHours();
     if (hour < 12) setGreeting('Good Morning');
     else if (hour < 18) setGreeting('Good Afternoon');

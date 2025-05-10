@@ -1,9 +1,8 @@
 //app/lib/db.ts
 import postgres from 'postgres';
 import type { User } from '@/app/lib/definitions';
-
 // Create a connection
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+const sql = postgres(process.env.POSTGRES_URL!, { ssl: false });
 
 export async function query(text: string, params?: any[]) {
   try {

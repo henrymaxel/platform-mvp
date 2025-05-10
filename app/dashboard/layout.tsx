@@ -17,7 +17,7 @@ export default function DashboardLayout({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { data: session } = useSession();
   const userImage = session?.user?.profile_picture_url || '/fallback_avatar.png';
-  const userName = session?.user?.first_name ?? 'Demo';
+  const userName = session?.user?.first_name || 'Demo';
 
   return (
     <div className="flex h-screen bg-gray-900 text-white overflow-hidden">

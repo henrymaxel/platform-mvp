@@ -9,11 +9,11 @@ export async function GET() {
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
+  console.log(session?.user?.id);
   try {
     // Get user's projects
-    const projects = await sql`
-      SELECT 
+    const projects = await sql 
+    `SELECT 
         p.id, 
         p.title, 
         p.description,
@@ -23,8 +23,7 @@ export async function GET() {
         p.visibility
       FROM projects p
       WHERE p.user_id = ${session.user.id}
-      ORDER BY p.updated_at DESC
-    `;
+      ORDER BY p.updated_at DESC;`;
 
     // Ensure projects is an array
     const projectsArray = Array.isArray(projects) ? projects : [];
@@ -51,6 +50,7 @@ export async function GET() {
           ORDER BY cr.chapter_number
         `;
 
+        console.log("CHAPTERS: ", chapters);
         return {
           ...project,
           chapters: Array.isArray(chapters) ? chapters : []

@@ -25,6 +25,7 @@ export const authConfig: NextAuthConfig = {
       return true;
     },
     async jwt({ token, user }) {
+      // console.log("HERE JWT");
       if (user) {
         token.id = user.id;
         token.first_name = user.first_name;
@@ -33,16 +34,18 @@ export const authConfig: NextAuthConfig = {
         token.role = user.role;
         token.profile_picture_url = user.profile_picture_url;
       }
+              // console.log("TOKEN: ", token);
       return token;
     },
     async session({ session, token }) {
-      if (session?.user) {
+      // console.log("HERE SESSIONS");
         session.user.id = token.id as string;
+        session.user.name = `${token.first_name} ${token.last_name}` as string;
         session.user.first_name = token.first_name as string;
         session.user.last_name = token.last_name as string;
         session.user.role = token.role as string;
         session.user.profile_picture_url = token.profile_picture_url as string;
-      }
+        // console.log("SESS: ", session);
       return session;
     }
   },
