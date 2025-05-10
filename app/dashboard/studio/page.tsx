@@ -4,9 +4,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   Save, 
-  AlignLeft,
-  AlignCenter,
-  AlignJustify,
   Bold,
   Italic,
   Underline,
@@ -17,15 +14,13 @@ import {
   FolderOpen,
   FileText,
   MoreVertical,
-  Code,
   List,
   ListOrdered,
   Quote,
-  Link2,
-  Image,
   Heading1,
   Heading2,
   Heading3,
+  Pencil,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useDebounce } from '@/app/hooks/useDebounce';
@@ -52,7 +47,6 @@ interface Project {
 
 export default function WritingStudio() {
   const { data: session } = useSession();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   // State
   const [projects, setProjects] = useState<Project[]>([]);
@@ -68,16 +62,38 @@ export default function WritingStudio() {
   const [isDocumentOutlineCollapsed, setIsDocumentOutlineCollapsed] = useState(false);
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
   const [expandedProjects, setExpandedProjects] = useState<string[]>([]);
+  
+  // Chapter dialog state
+  const [showChapterDialog, setShowChapterDialog] = useState(false);
+  const [newChapterTitle, setNewChapterTitle] = useState('');
 
   // Debounced content for auto-save
   const debouncedContent = useDebounce(content, 2000);
 
+  const [editingChapter, setEditingChapter] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+
+  // Add a new state for editing the main chapter title
+  const [isEditingMainTitle, setIsEditingMainTitle] = useState(false);
+  const [mainTitleEdit, setMainTitleEdit] = useState('');
+
   // Calculate word count
-  // const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
   const wordCount = useMemo(() => {
-  return content.trim().split(/\s+/).filter(word => word.length > 0).length;
-}, [content]);
-  const totalProjectWords = activeProject?.chapters.reduce((sum, ch) => sum + ch.words, 0) || 0;
+    return content.trim().split(/\s+/).filter(word => word.length > 0).length;
+  }, [content]);
+  
+  const totalProjectWords = useMemo(() => {
+    if (!activeProject) return 0;
+    
+    return activeProject.chapters.reduce((sum, ch) => {
+      // If this is the active chapter, use the current word count instead of the saved count
+      if (activeChapter && ch.id === activeChapter.id) {
+        return sum + wordCount;
+      }
+      return sum + ch.words;
+    }, 0);
+  }, [activeProject, activeChapter, wordCount]);
+  
   const completionPercentage = activeProject?.word_count_goal 
     ? Math.min(100, Math.round((totalProjectWords / activeProject.word_count_goal) * 100))
     : 0;
@@ -94,99 +110,44 @@ export default function WritingStudio() {
     }
   }, [debouncedContent]);
 
-// In app/dashboard/studio/page.tsx, update fetchProjects:
-// In app/dashboard/studio/page.tsx, update the fetchProjects function to add more specific logs:
-// app/dashboard/studio/page.tsx
-// Let's keep it simple - revert to your original code with minimal changes
-
-const fetchProjects = async () => {
-  try {
-    setError(null);
-    const response = await fetch('/api/projects', {
-      credentials: 'include',
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (!Array.isArray(data)) {
-      throw new Error('Invalid data format received from server');
-    }
-    
-    setProjects(data);
-    
-    // Set the first project and chapter as active
-    if (data.length > 0) {
-      const firstProject = data[0];
-      setActiveProject(firstProject);
-      setExpandedProjects([firstProject.id]);
+  const fetchProjects = async () => {
+    try {
+      setError(null);
+      const response = await fetch('/api/projects', {
+        credentials: 'include',
+      });
       
-      if (firstProject.chapters && firstProject.chapters.length > 0) {
-        const firstChapter = firstProject.chapters[0];
-        setActiveChapter(firstChapter);
-        setContent(firstChapter.content || '');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    }
-  } catch (error) {
-    console.error('Failed to fetch projects:', error);
-    setError(error instanceof Error ? error.message : 'Failed to fetch projects');
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-
-  // const fetchProjects = async () => {
-  //   try {
-  //     setError(null);
-  //     const response = await fetch('/api/projects', {
-  //       credentials: 'include', // Include cookies for session
-  //     });
       
-  //     if (!response.ok) {
-  //       throw new Error(`HTTP error! status: ${response.status}`);
-  //     }
+      const data = await response.json();
       
-  //     const data = await response.json();
-  //     console.log("STUDIO DATA: ", data);
-  //     // Ensure data is an array
-  //     if (!Array.isArray(data)) {
-  //       console.error('Unexpected API response format:', data);
-  //       throw new Error('Invalid data format received from server');
-  //     }
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid data format received from server');
+      }
       
-  //     setProjects(data);
-  //     console.log(data);
-  //     // Set first project as active if available
-  //     if (data.length > 0) {
-  //       setActiveProject(data[0]);
-  //       setExpandedProjects([data[0].id]);
+      setProjects(data);
+      
+      // Set the first project and chapter as active
+      if (data.length > 0) {
+        const firstProject = data[0];
+        setActiveProject(firstProject);
+        setExpandedProjects([firstProject.id]);
         
-  //       // Set first chapter as active if available
-  //       // if (data[0].chapters && Array.isArray(data[0].chapters) && data[0].chapters.length > 0) {
-  //       //   const firstChapter = data[0].chapters[0];
-  //       //   setActiveChapter(firstChapter);
-  //       //   setContent(firstChapter.content || '');
-  //       // }
-
-  //       console.log(data[0])
-  //       const projectChapters = data[0].chapters || [];
-  //       if (projectChapters.length > 0) {
-  //         const firstChapter = projectChapters[0];
-  //         setActiveChapter(firstChapter);
-  //         setContent(firstChapter.content || 'NO CONTENT STUDIO PAGE DEV.');
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to fetch projects:', error);
-  //     setError(error instanceof Error ? error.message : 'Failed to fetch projects');
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+        if (firstProject.chapters && firstProject.chapters.length > 0) {
+          const firstChapter = firstProject.chapters[0];
+          setActiveChapter(firstChapter);
+          setContent(firstChapter.content || '');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch projects:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch projects');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const saveContent = async () => {
     if (!activeChapter || !activeProject) return;
@@ -197,7 +158,7 @@ const fetchProjects = async () => {
       const response = await fetch(`/api/chapters/${activeChapter.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Include cookies for session
+        credentials: 'include',
         body: JSON.stringify({
           content,
           word_count: wordCount,
@@ -205,6 +166,8 @@ const fetchProjects = async () => {
       });
 
       if (response.ok) {
+        const savedData = await response.json();
+
         setLastSaved(new Date());
         
         // Update local state
@@ -221,6 +184,8 @@ const fetchProjects = async () => {
               }
             : proj
         ));
+      } else {
+        console.error('Save failed:', response.status, await response.text());
       }
     } catch (error) {
       console.error('Failed to save content:', error);
@@ -229,92 +194,115 @@ const fetchProjects = async () => {
     }
   };
 
-  const insertMarkdown = (prefix: string, suffix: string = '', defaultText: string = '') => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end) || defaultText;
+  // Updated to show dialog instead of creating directly
+  const addNewChapter = async () => {
+    if (!activeProject) return;
     
-    const newContent = 
-      content.substring(0, start) + 
-      prefix + selectedText + suffix + 
-      content.substring(end);
-    
-    setContent(newContent);
-    
-    // Set cursor position after the inserted text
-    setTimeout(() => {
-      textarea.focus();
-      const newPosition = start + prefix.length + selectedText.length;
-      textarea.setSelectionRange(newPosition, newPosition);
-    }, 0);
+    // Set a default title and show the dialog
+    setNewChapterTitle(`Chapter ${activeProject.chapters.length + 1}`);
+    setShowChapterDialog(true);
   };
 
-  const handleToolbarAction = (action: string) => {
-    switch (action) {
-      case 'bold':
-        insertMarkdown('**', '**', 'bold text');
-        break;
-      case 'italic':
-        insertMarkdown('*', '*', 'italic text');
-        break;
-      case 'underline':
-        insertMarkdown('<u>', '</u>', 'underlined text');
-        break;
-      case 'h1':
-        insertMarkdown('# ', '', 'Heading 1');
-        break;
-      case 'h2':
-        insertMarkdown('## ', '', 'Heading 2');
-        break;
-      case 'h3':
-        insertMarkdown('### ', '', 'Heading 3');
-        break;
-      case 'code':
-        insertMarkdown('`', '`', 'code');
-        break;
-      case 'code-block':
-        insertMarkdown('```\n', '\n```', 'code block');
-        break;
-      case 'quote':
-        insertMarkdown('> ', '', 'quote');
-        break;
-      case 'link':
-        insertMarkdown('[', '](url)', 'link text');
-        break;
-      case 'image':
-        insertMarkdown('![', '](url)', 'alt text');
-        break;
-      case 'ul':
-        insertMarkdown('- ', '', 'list item');
-        break;
-      case 'ol':
-        insertMarkdown('1. ', '', 'list item');
-        break;
+  // Function to handle the actual chapter creation
+  const createChapter = async () => {
+    if (!activeProject || !newChapterTitle.trim()) return;
+
+    try {
+      const response = await fetch('/api/chapters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          project_id: activeProject.id,
+          title: newChapterTitle.trim(),
+          chapter_number: activeProject.chapters.length + 1,
+        }),
+      });
+
+      if (response.ok) {
+        const newChapter = await response.json();
+        
+        // Update local state
+        setProjects(prev => prev.map(proj => 
+          proj.id === activeProject.id 
+            ? {
+                ...proj,
+                chapters: [...proj.chapters, newChapter]
+              }
+            : proj
+        ));
+        
+        // Update active project
+        setActiveProject(prev => prev ? {
+          ...prev,
+          chapters: [...prev.chapters, newChapter]
+        } : null);
+        
+        // Switch to the new chapter
+        setActiveChapter(newChapter);
+        setContent(newChapter.content || '');
+        
+        // Close dialog and reset
+        setShowChapterDialog(false);
+        setNewChapterTitle('');
+      }
+    } catch (error) {
+      console.error('Failed to create chapter:', error);
     }
   };
 
-// Keep the original switchChapter function
-const switchChapter = async (chapter: Chapter) => {
-  // Save current chapter before switching
-  if (activeChapter && content !== activeChapter.content) {
-    await saveContent();
-  }
-  
-  setActiveChapter(chapter);
-  setContent(chapter.content || '');
-};
+  // Updated to remove code, link, and image functionality
+  const handleToolbarAction = (action: string) => {
+    if (window.markdownInsertText) {
+      switch (action) {
+        case 'bold':
+          window.markdownInsertText('**', '**', 'bold text');
+          break;
+        case 'italic':
+          window.markdownInsertText('*', '*', 'italic text');
+          break;
+        case 'underline':
+          window.markdownInsertText('<u>', '</u>', 'underlined text');
+          break;
+        case 'h1':
+          window.markdownInsertText('# ', '', 'Heading 1');
+          break;
+        case 'h2':
+          window.markdownInsertText('## ', '', 'Heading 2');
+          break;
+        case 'h3':
+          window.markdownInsertText('### ', '', 'Heading 3');
+          break;
+        case 'quote':
+          window.markdownInsertText('> ', '', 'quote');
+          break;
+        case 'ul':
+          window.markdownInsertText('- ', '', 'list item');
+          break;
+        case 'ol':
+          window.markdownInsertText('1. ', '', 'list item');
+          break;
+      }
+    }
+  };
 
-// Keep the original toggleProject function
-const toggleProject = (projectId: string) => {
-  setExpandedProjects(prev => 
-    prev.includes(projectId) 
-      ? prev.filter(id => id !== projectId)
-      : [...prev, projectId]
-  );
-};
+  const switchChapter = async (chapter: Chapter) => {
+    // Save current chapter before switching
+    if (activeChapter && content !== activeChapter.content) {
+      await saveContent();
+    }
+    
+    setActiveChapter(chapter);
+    setContent(chapter.content || '');
+  };
+
+  const toggleProject = (projectId: string) => {
+    setExpandedProjects(prev => 
+      prev.includes(projectId) 
+        ? prev.filter(id => id !== projectId)
+        : [...prev, projectId]
+    );
+  };
 
   const formatLastSaved = () => {
     if (!lastSaved) return 'Not saved yet';
@@ -323,6 +311,69 @@ const toggleProject = (projectId: string) => {
     if (diff < 60) return 'Just now';
     if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
     return `${Math.floor(diff / 3600)} hours ago`;
+  };
+
+  // Update the updateChapterTitle function to handle both sidebar and main title edits
+  const updateChapterTitle = async (chapterId: string, fromMainTitle: boolean = false) => {
+    const titleToUpdate = fromMainTitle ? mainTitleEdit : editingTitle;
+    if (!titleToUpdate.trim() || !activeProject) return;
+    
+    try {
+      const response = await fetch(`/api/chapters/${chapterId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: titleToUpdate.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        setProjects(prev => prev.map(proj => 
+          proj.id === activeProject.id 
+            ? {
+                ...proj,
+                chapters: proj.chapters.map(ch => 
+                  ch.id === chapterId 
+                    ? { ...ch, title: titleToUpdate.trim() }
+                    : ch
+                )
+              }
+            : proj
+        ));
+        
+        // Update active chapter
+        if (activeChapter?.id === chapterId) {
+          setActiveChapter(prev => prev ? { ...prev, title: titleToUpdate.trim() } : null);
+        }
+        
+        // Update active project
+        setActiveProject(prev => prev ? {
+          ...prev,
+          chapters: prev.chapters.map(ch => 
+            ch.id === chapterId 
+              ? { ...ch, title: titleToUpdate.trim() }
+              : ch
+          )
+        } : null);
+        
+        // Reset editing state
+        if (fromMainTitle) {
+          setIsEditingMainTitle(false);
+          setMainTitleEdit('');
+        } else {
+          setEditingChapter(null);
+          setEditingTitle('');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update chapter title:', error);
+      if (fromMainTitle) {
+        setIsEditingMainTitle(false);
+        setMainTitleEdit('');
+      }
+    }
   };
 
   if (error) {
@@ -373,7 +424,8 @@ const toggleProject = (projectId: string) => {
             {projects.length === 0 ? (
               <div className="text-center text-gray-400 py-8">
                 <p>No projects found.</p>
-                <button className="mt-4 flex items-center text-gray-400 hover:text-white transition-colors mx-auto">
+                <button 
+                  className="mt-4 flex items-center text-gray-400 hover:text-white transition-colors mx-auto">
                   <Plus size={16} className="mr-2" />
                   Create your first project
                 </button>
@@ -441,7 +493,9 @@ const toggleProject = (projectId: string) => {
                     )}
                   </div>
                 ))}
-                <button className="mt-4 flex items-center text-gray-400 hover:text-white transition-colors">
+                <button 
+                  onClick={addNewChapter}
+                  className="mt-4 flex items-center text-gray-400 hover:text-white transition-colors">
                   <Plus size={16} className="mr-2" />
                   Add new chapter
                 </button>
@@ -514,40 +568,11 @@ const toggleProject = (projectId: string) => {
               </button>
               <span className="text-gray-400">|</span>
               <button 
-                onClick={() => handleToolbarAction('code')}
-                className="p-1.5 hover:bg-gray-700 rounded" 
-                title="Inline Code"
-              >
-                <Code size={16} />
-              </button>
-              <button 
-                onClick={() => handleToolbarAction('code-block')}
-                className="p-1.5 hover:bg-gray-700 rounded" 
-                title="Code Block"
-              >
-                <FileText size={16} />
-              </button>
-              <button 
                 onClick={() => handleToolbarAction('quote')}
                 className="p-1.5 hover:bg-gray-700 rounded" 
                 title="Quote"
               >
                 <Quote size={16} />
-              </button>
-              <span className="text-gray-400">|</span>
-              <button 
-                onClick={() => handleToolbarAction('link')}
-                className="p-1.5 hover:bg-gray-700 rounded" 
-                title="Link"
-              >
-                <Link2 size={16} />
-              </button>
-              <button 
-                onClick={() => handleToolbarAction('image')}
-                className="p-1.5 hover:bg-gray-700 rounded" 
-                title="Image"
-              >
-                <Image size={16} />
               </button>
               <span className="text-gray-400">|</span>
               <button 
@@ -578,24 +603,49 @@ const toggleProject = (projectId: string) => {
           <div className="max-w-4xl mx-auto">
             {activeChapter ? (
               <>
-                <h1 className="text-2xl font-bold mb-4">{activeChapter.title}</h1>
+                <div className="flex items-center mb-4 group">
+                  {isEditingMainTitle ? (
+                    <input
+                      type="text"
+                      value={mainTitleEdit}
+                      onChange={(e) => setMainTitleEdit(e.target.value)}
+                      onBlur={() => updateChapterTitle(activeChapter.id, true)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          updateChapterTitle(activeChapter.id, true);
+                        } else if (e.key === 'Escape') {
+                          setIsEditingMainTitle(false);
+                          setMainTitleEdit('');
+                        }
+                      }}
+                      className="text-2xl font-bold bg-gray-800 text-white px-2 py-1 rounded border border-gray-600 focus:border-red-500 focus:outline-none"
+                      autoFocus
+                    />
+                  ) : (
+                    <h1 className="text-2xl font-bold flex items-center">
+                      {activeChapter.title}
+                      <button
+                        onClick={() => {
+                          setIsEditingMainTitle(true);
+                          setMainTitleEdit(activeChapter.title);
+                        }}
+                        className="ml-3 p-1 rounded hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Edit chapter title"
+                      >
+                        <Pencil size={18} />
+                      </button>
+                    </h1>
+                  )}
+                </div>
                 <div style={{ minHeight: 'calc(100vh - 280px)' }}>
-                        <textarea
-        ref={textareaRef}
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Start writing..."
-        className="w-full h-full p-4 bg-gray-900 text-white border border-gray-700 rounded"
-        style={{ minHeight: '500px' }}
-      />
-                  {/* <MarkdownEditor
+                  <MarkdownEditor
                     value={content}
                     onChange={setContent}
                     placeholder="Start writing..."
                     className="leading-relaxed"
                     onToolbarAction={handleToolbarAction}
-                  /> */}
-
+                  />
                 </div>
               </>
             ) : (
@@ -706,6 +756,46 @@ const toggleProject = (projectId: string) => {
           </div>
         )}
       </div>
-    </div>
-  );
+
+      {/* Chapter Title Dialog */}
+      {showChapterDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg w-96">
+            <h2 className="text-xl font-bold mb-4">Add New Chapter</h2>
+            <input
+             type="text"
+             value={newChapterTitle}
+             onChange={(e) => setNewChapterTitle(e.target.value)}
+             placeholder="Chapter title..."
+             className="w-full p-2 bg-gray-700 border border-gray-600 rounded mb-4 focus:border-red-500 focus:outline-none"
+             autoFocus
+             onKeyPress={(e) => {
+               if (e.key === 'Enter') {
+                 createChapter();
+               }
+             }}
+           />
+           <div className="flex justify-end space-x-2">
+             <button
+               onClick={() => {
+                 setShowChapterDialog(false);
+                 setNewChapterTitle('');
+               }}
+               className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+             >
+               Cancel
+             </button>
+             <button
+               onClick={createChapter}
+               disabled={!newChapterTitle.trim()}
+               className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+               Create Chapter
+             </button>
+           </div>
+         </div>
+       </div>
+     )}
+   </div>
+ );
 }

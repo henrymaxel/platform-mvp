@@ -1,6 +1,5 @@
-'use client';
-
-import React, { useRef, useEffect, useState } from 'react';
+// app/ui/Editor/MarkDownEditor.tsx
+import React, { useEffect, useRef, useState } from 'react';
 
 interface MarkdownEditorProps {
   value: string;
@@ -13,65 +12,181 @@ interface MarkdownEditorProps {
 export function MarkdownEditor({ 
   value, 
   onChange, 
-  placeholder = "Start writing...",
+  placeholder = "Start writing...", 
   className = "",
   onToolbarAction 
 }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [highlightedHtml, setHighlightedHtml] = useState('');
+  const [isPreview, setIsPreview] = useState(false);
 
-  // Basic markdown syntax highlighting
-  useEffect(() => {
-    const highlighted = value
-      // Headers
-      .replace(/^(#{1,6})\s(.+)$/gm, '<span class="text-blue-400">$1</span> <span class="text-blue-300 font-bold">$2</span>')
-      // Bold
-      .replace(/\*\*(.*?)\*\*/g, '<span class="text-yellow-400">**</span><span class="font-bold">$1</span><span class="text-yellow-400">**</span>')
-      // Italic
-      .replace(/\*(.*?)\*/g, '<span class="text-yellow-400">*</span><span class="italic">$1</span><span class="text-yellow-400">*</span>')
-      // Code blocks
-      .replace(/```([\s\S]*?)```/g, '<span class="text-green-400">```</span><span class="text-green-300">$1</span><span class="text-green-400">```</span>')
-      // Inline code
-      .replace(/`([^`]+)`/g, '<span class="text-green-400">`</span><span class="text-green-300">$1</span><span class="text-green-400">`</span>')
-      // Links
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<span class="text-purple-400">[</span><span class="text-purple-300">$1</span><span class="text-purple-400">](</span><span class="text-purple-500 underline">$2</span><span class="text-purple-400">)</span>')
-      // Blockquotes
-      .replace(/^>\s(.+)$/gm, '<span class="text-gray-400">></span> <span class="text-gray-300 italic">$1</span>')
-      // Lists
-      .replace(/^[-*+]\s(.+)$/gm, '<span class="text-orange-400">•</span> $1')
-      .replace(/^\d+\.\s(.+)$/gm, '<span class="text-orange-400">$&</span>');
+  // Enhanced text insertion with proper cursor positioning
+  const insertText = (before: string, after: string = '', defaultText: string = '') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
 
-    setHighlightedHtml(highlighted);
-  }, [value]);
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = value.substring(start, end) || defaultText;
+    
+    const newValue = 
+      value.substring(0, start) + 
+      before + selectedText + after + 
+      value.substring(end);
+    
+    onChange(newValue);
+    
+    // Set cursor position after the inserted text
+    setTimeout(() => {
+      textarea.focus();
+      const newPosition = start + before.length + selectedText.length;
+      textarea.setSelectionRange(newPosition, newPosition);
+    }, 0);
+  };
 
-  const handleScroll = () => {
-    if (textareaRef.current) {
-      const scrollPercentage = textareaRef.current.scrollTop / 
-        (textareaRef.current.scrollHeight - textareaRef.current.clientHeight);
+  // Handle keyboard shortcuts
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key) {
+        case 'b':
+          e.preventDefault();
+          insertText('**', '**', 'bold text');
+          break;
+        case 'i':
+          e.preventDefault();
+          insertText('*', '*', 'italic text');
+          break;
+        // Removed code and link shortcuts
+      }
+    }
+    
+    // Handle tab for indentation
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = textareaRef.current?.selectionStart ?? 0;
+      const end = textareaRef.current?.selectionEnd ?? 0;
       
-      const highlightedDiv = textareaRef.current.nextElementSibling as HTMLDivElement;
-      if (highlightedDiv) {
-        highlightedDiv.scrollTop = scrollPercentage * 
-          (highlightedDiv.scrollHeight - highlightedDiv.clientHeight);
+      if (e.shiftKey) {
+        // Remove indentation
+        const lines = value.split('\n');
+        let currentPos = 0;
+        let lineStart = 0;
+        let lineEnd = 0;
+        
+        for (let i = 0; i < lines.length; i++) {
+          lineEnd = currentPos + lines[i].length;
+          if (currentPos <= start && start <= lineEnd) {
+            lineStart = currentPos;
+            break;
+          }
+          currentPos = lineEnd + 1;
+        }
+        
+        if (value.substring(lineStart, lineStart + 2) === '  ') {
+          const newValue = value.substring(0, lineStart) + value.substring(lineStart + 2);
+          onChange(newValue);
+          setTimeout(() => {
+            textareaRef.current?.setSelectionRange(start - 2, end - 2);
+          }, 0);
+        }
+      } else {
+        // Add indentation
+        insertText('  ', '', '');
       }
     }
   };
 
+  // Make toolbar actions work with the new insert method
+  useEffect(() => {
+    if (onToolbarAction) {
+      window.markdownInsertText = insertText;
+    }
+    return () => {
+      delete window.markdownInsertText;
+    };
+  }, [value]);
+
+  // Improved markdown preview renderer with proper styling
+  const renderPreview = (text: string) => {
+    // Basic markdown parsing
+    let html = text
+      // Headers (process these first to avoid conflicts)
+      .replace(/^### (.*?)$/gm, '<h3 class="text-xl font-bold mb-2">$1</h3>')
+      .replace(/^## (.*?)$/gm, '<h2 class="text-2xl font-bold mb-3">$1</h2>')
+      .replace(/^# (.*?)$/gm, '<h1 class="text-3xl font-bold mb-4">$1</h1>')
+      // Bold
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+      // Italic
+      .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+      // Blockquotes
+      .replace(/^> (.*?)$/gm, '<blockquote class="border-l-4 border-gray-600 pl-4 my-2 text-gray-300">$1</blockquote>')
+      // Fix bullet points - no double bullets
+      .replace(/^- (.*?)$/gm, '<li class="ml-4">$1</li>')
+      // Ordered lists
+      .replace(/^\d+\. (.*?)$/gm, '<li class="ml-4 list-decimal">$1</li>')
+      // Paragraphs (wrap lines that aren't already wrapped in tags)
+      .split('\n\n').map(paragraph => {
+        if (!paragraph.match(/^<[^>]+>/)) {
+          return `<p class="mb-4">${paragraph.replace(/\n/g, '<br />')}</p>`;
+        }
+        return paragraph;
+      }).join('\n')
+      // Line breaks within paragraphs
+      .replace(/([^>])\n([^<])/g, '$1<br />$2');
+    
+    return { __html: html };
+  };
+
   return (
-    <div className="relative w-full h-full">
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onScroll={handleScroll}
-        className={`absolute inset-0 w-full h-full bg-transparent text-transparent caret-white resize-none outline-none z-10 font-mono ${className}`}
-        placeholder={placeholder}
-        style={{ caretColor: 'white' }}
-      />
-      <div 
-        className="absolute inset-0 w-full h-full bg-gray-900 text-white overflow-auto pointer-events-none font-mono whitespace-pre-wrap break-words"
-        dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-      />
+    <div className="h-full flex flex-col">
+      {/* Toggle Preview Button */}
+      <div className="flex justify-end mb-2">
+        <button
+          onClick={() => setIsPreview(!isPreview)}
+          className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+        >
+          {isPreview ? 'Edit' : 'Preview'}
+        </button>
+      </div>
+
+      {/* Editor/Preview Area */}
+      {isPreview ? (
+        <div 
+          className={`w-full h-full p-4 bg-gray-900 text-white border border-gray-700 rounded overflow-auto ${className}`}
+          style={{ minHeight: '500px' }}
+        >
+          <div 
+            className="prose prose-invert max-w-none"
+            dangerouslySetInnerHTML={renderPreview(value)}
+          />
+        </div>
+      ) : (
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className={`w-full h-full p-4 bg-gray-900 text-white border border-gray-700 rounded font-mono focus:outline-none focus:ring-2 focus:ring-red-500 ${className}`}
+          style={{ minHeight: '500px', resize: 'none' }}
+        />
+      )}
+
+      {/* Status bar with word count */}
+      <div className="mt-2 text-sm text-gray-400">
+        {!isPreview && (
+          <div className="flex gap-4">
+            <span>Ctrl+B: Bold</span>
+            <span>Ctrl+I: Italic</span>
+          </div>
+        )}
+      </div>
     </div>
   );
+}
+
+// Extend window interface for toolbar communication
+declare global {
+  interface Window {
+    markdownInsertText?: (before: string, after?: string, defaultText?: string) => void;
+  }
 }

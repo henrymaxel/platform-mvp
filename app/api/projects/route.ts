@@ -28,8 +28,8 @@ export async function GET() {
     `;
 
     // Extract projects from result
-    const projects = projectsResult.rows || projectsResult;
-    console.log("Projects array:", projects);
+
+    const projects = projectsResult.rows ?? projectsResult;
 
     // Get chapters for each project
     const projectsWithChapters = await Promise.all(
@@ -54,8 +54,7 @@ export async function GET() {
         `;
 
         // Extract chapters from result
-        const chapters = chaptersResult.rows || chaptersResult;
-        console.log(`Chapters for project ${project.id}:`, chapters);
+        const chapters = chaptersResult.rows ?? chaptersResult;
 
         return {
           ...project,
@@ -63,8 +62,6 @@ export async function GET() {
         };
       })
     );
-
-    console.log("Final projects with chapters:", JSON.stringify(projectsWithChapters, null, 2));
 
     return NextResponse.json(projectsWithChapters);
   } catch (error) {
