@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { inter } from '@/app/ui/fonts';
 import "./globals.css";
-import { SessionProvider } from "next-auth/react";
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: "Company A",
@@ -18,9 +18,9 @@ export default function RootLayout({
       <body
         className={`${inter.className} antialiased`}
       >
-        <SessionProvider>
+        <Providers>
         {children}
-        </SessionProvider>
+        </Providers>
 
       </body>
     </html>
