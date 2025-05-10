@@ -38,7 +38,11 @@ export default function LoginForm() {
             Sign Up
           </button>
         </div>
-        
+        {errorMessage && (
+          <div className="bg-red-500 text-white p-3 rounded-md mb-4">
+            {errorMessage}
+          </div>
+        )}
         
         {/* Login Form */}
         {activeTab === 'login' && (
