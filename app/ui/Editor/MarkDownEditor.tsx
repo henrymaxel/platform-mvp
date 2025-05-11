@@ -166,7 +166,7 @@ export function MarkdownEditor({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`w-full h-full p-4 bg-gray-900 text-white border border-gray-700 rounded font-mono focus:outline-none focus:ring-2 focus:ring-red-500 ${className}`}
+          className={`w-full h-full p-4 bg-gray-900 text-white border border-gray-700 rounded font-mono focus:outline-none focus:ring-2 focus:ring-myred-500 ${className}`}
           style={{ minHeight: '500px', resize: 'none' }}
         />
       )}

@@ -5,6 +5,27 @@
   --foreground: #171717;
 }
 
+@theme {
+  /* Your custom myred color palette */
+  --color-myred-50: #fef2f2;
+  --color-myred-100: #fee2e2;
+  --color-myred-200: #fecaca;
+  --color-myred-300: #fca5a5;
+  --color-myred-400: #f87171;
+  --color-myred-500: #CB2020;
+  --color-myred-600: #b71c1b;
+  --color-myred-700: #991b1b;
+  --color-myred-800: #7f1d1d;
+  --color-myred-900: #450a0a;
+  --color-myred-950: #2e0a0a;
+  
+  /* Other theme customizations */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

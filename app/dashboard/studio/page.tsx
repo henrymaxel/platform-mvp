@@ -467,10 +467,10 @@ export default function WritingStudio() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="text-red-500 mb-4">Error: {error}</div>
+          <div className="text-myred-500 mb-4">Error: {error}</div>
           <button 
             onClick={() => fetchProjects()}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded"
+            className="px-4 py-2 bg-myred-600 hover:bg-myred-700 rounded"
           >
             Retry
           </button>
@@ -481,17 +481,17 @@ export default function WritingStudio() {
   
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center min-h-full">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-red-500 border-r-transparent"></div>
-          <p className="mt-2">Loading studio...</p>
+          <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-solid border-myred-500 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+          <h2 className="mt-4 text-xl font-semibold text-white">Loading your writing studio...</h2>
         </div>
       </div>
     );
   }
 
 return (
-  <div className="flex h-full overflow-hidden border-t border-l border-red-800">
+  <div className="flex h-full overflow-hidden border-t border-l border-myred-800">
     {/* Document Outline Panel */}
     <div className={`${isDocumentOutlineCollapsed ? 'w-12' : 'w-64'} bg-gray-800 border-r border-gray-700 flex flex-col transition-all duration-300`}>
       <div className="p-4 border-b border-gray-700 flex justify-between items-center">
@@ -518,7 +518,7 @@ return (
                 </div>
                 <div className="w-full bg-gray-600 rounded-full h-2 mt-2">
                   <div 
-                    className="bg-red-500 h-2 rounded-full transition-all duration-300"
+                    className="bg-myred-500 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${(subscription.current_project_count / subscription.max_project_count) * 100}%` }}
                   />
                 </div>
@@ -556,7 +556,7 @@ return (
                         >
                           <FolderOpen size={16} className="mr-2 text-yellow-500" />
                           <span className={`font-semibold ${
-                            activeProject?.id === project.id ? 'text-red-500' : ''
+                            activeProject?.id === project.id ? 'text-myred-500' : ''
                           }`}>{project.title}</span>
                         </button>
                       </div>
@@ -578,7 +578,7 @@ return (
                                 setShowDeleteDialog(true);
                                 setShowProjectMenu(null);
                               }}
-                              className="w-full px-3 py-2 text-left hover:bg-gray-600 text-red-400 flex items-center"
+                              className="w-full px-3 py-2 text-left hover:bg-gray-600 text-myred-400 flex items-center"
                             >
                               <Trash2 size={14} className="mr-2" />
                               Delete
@@ -597,7 +597,7 @@ return (
                               onClick={() => switchChapter(chapter)}
                               className={`flex items-center justify-between w-full p-2 rounded text-left transition-colors ${
                                 activeChapter?.id === chapter.id 
-                                  ? 'bg-red-600 text-white' 
+                                  ? 'bg-myred-600 text-white' 
                                   : 'hover:bg-gray-700'
                               }`}
                             >
@@ -666,7 +666,7 @@ return (
               className={`flex items-center space-x-2 px-3 py-1.5 rounded text-sm ${
                 isSaving || !activeChapter
                   ? 'bg-gray-600 opacity-50' 
-                  : 'bg-red-600 hover:bg-red-700'
+                  : 'bg-myred-600 hover:bg-myred-700'
               }`}
             >
               <Save size={16} />
@@ -772,7 +772,7 @@ return (
                             setMainTitleEdit('');
                           }
                         }}
-                        className="text-2xl font-bold bg-gray-800 text-white px-2 py-1 rounded border border-gray-600 focus:border-red-500 focus:outline-none"
+                        className="text-2xl font-bold bg-gray-800 text-white px-2 py-1 rounded border border-gray-600 focus:border-myred-500 focus:outline-none"
                         autoFocus
                       />
                     ) : (
@@ -807,7 +807,7 @@ return (
                   <p className="mb-6">{activeProject.description}</p>
                   <button 
                     onClick={addNewChapter}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded flex items-center mx-auto"
+                    className="px-4 py-2 bg-myred-600 hover:bg-myred-700 rounded flex items-center mx-auto"
                   >
                     <Plus size={18} className="mr-2" />
                     Create First Chapter
@@ -833,7 +833,7 @@ return (
                 <span>Goal: {activeProject.word_count_goal.toLocaleString()}</span>
                 <div className="w-32 bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-red-500 h-2 rounded-full transition-all duration-300" 
+                    className="bg-myred-500 h-2 rounded-full transition-all duration-300" 
                     style={{ width: `${completionPercentage}%` }}
                   />
                 </div>
@@ -919,7 +919,7 @@ return (
               <input
                 type="text"
                 placeholder="Ask AI for help..."
-                className="w-full p-2 bg-gray-700 rounded text-sm placeholder-gray-400 outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full p-2 bg-gray-700 rounded text-sm placeholder-gray-400 outline-none focus:ring-2 focus:ring-myred-500"
               />
             </div>
           </div>
@@ -936,7 +936,7 @@ return (
               value={newChapterTitle}
               onChange={(e) => setNewChapterTitle(e.target.value)}
               placeholder="Chapter title..."
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded mb-4 focus:border-red-500 focus:outline-none"
+              className="w-full p-2 bg-gray-700 border border-gray-600 rounded mb-4 focus:border-myred-500 focus:outline-none"
               autoFocus
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
@@ -957,7 +957,7 @@ return (
               <button
                 onClick={createChapter}
                 disabled={!newChapterTitle.trim()}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-myred-600 hover:bg-myred-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Create Chapter
               </button>

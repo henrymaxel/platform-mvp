@@ -38,7 +38,7 @@ export default function NavLinks() {
               className={clsx(
                 'flex items-center w-full p-3 rounded-md transition-colors',
                 {
-                  'bg-red-500 hover:bg-red-600 text-white': isActive,
+                  'bg-myred-500 hover:bg-myred-600 text-white': isActive,
                   'text-gray-300 hover:bg-gray-700': !isActive,
                 },
               )}
@@ -56,7 +56,7 @@ export default function NavLinks() {
           className={clsx(
             'flex items-center w-full p-3 rounded-md transition-colors',
             {
-              'bg-red-500 hover:bg-red-600 text-white': pathname === '/dashboard/settings',
+              'bg-myred-500 hover:bg-myred-600 text-white': pathname === '/dashboard/settings',
               'text-gray-300 hover:bg-gray-700': pathname !== '/dashboard/settings',
             }
           )}

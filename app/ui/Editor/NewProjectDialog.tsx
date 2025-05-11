@@ -95,11 +95,11 @@ export default function NewProjectDialog({
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-red-500 focus:outline-none"
+              className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none"
               disabled={!canCreateMoreProjects}
             />
             {errors.title && (
-              <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+              <p className="text-myred-500 text-sm mt-1">{errors.title}</p>
             )}
           </div>
           
@@ -112,11 +112,11 @@ export default function NewProjectDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-red-500 focus:outline-none"
+              className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none"
               disabled={!canCreateMoreProjects}
             />
             {errors.description && (
-              <p className="text-red-500 text-sm mt-1">{errors.description}</p>
+              <p className="text-myred-500 text-sm mt-1">{errors.description}</p>
             )}
           </div>
           
@@ -129,12 +129,12 @@ export default function NewProjectDialog({
               id="wordCountGoal"
               value={wordCountGoal}
               onChange={(e) => setWordCountGoal(parseInt(e.target.value) || 0)}
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-red-500 focus:outline-none"
+              className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none"
               min={100}
               disabled={!canCreateMoreProjects}
             />
             {errors.wordCountGoal && (
-              <p className="text-red-500 text-sm mt-1">{errors.wordCountGoal}</p>
+              <p className="text-myred-500 text-sm mt-1">{errors.wordCountGoal}</p>
             )}
           </div>
           
@@ -149,7 +149,7 @@ export default function NewProjectDialog({
             <button
               type="submit"
               disabled={!canCreateMoreProjects || isCreating}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              className="px-4 py-2 bg-myred-600 hover:bg-myred-700 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
               {isCreating ? (
                 <>
