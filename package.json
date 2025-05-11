@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate": "tsx scripts/run_migrations.ts",
+    "migrate:add-tiers": "tsx app/lib/add_subscription_tiers.ts",
+    "migrate:add-content": "tsx app/lib/add_content_columns.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

@@ -1,9 +1,8 @@
+// app/api/projects/route.ts
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth'; 
 import { sql } from '@/app/lib/database';
 
-// IMPORTANT: These must be named exports with async functions
-// In app/api/projects/route.ts
 export async function GET() {
   const session = await auth();
   
@@ -12,6 +11,17 @@ export async function GET() {
   }
   
   try {
+    // Get user's subscription info
+    const userInfo = await sql`
+      SELECT 
+        u.subscription_tier_id,
+        st.name as tier_name,
+        st.max_project_count
+      FROM users u
+      LEFT JOIN subscription_tiers st ON u.subscription_tier_id = st.id
+      WHERE u.id = ${session.user.id}
+    `;
+
     // Get user's projects
     const projectsResult = await sql`
       SELECT 
@@ -28,7 +38,6 @@ export async function GET() {
     `;
 
     // Extract projects from result
-
     const projects = projectsResult.rows ?? projectsResult;
 
     // Get chapters for each project
@@ -63,7 +72,18 @@ export async function GET() {
       })
     );
 
-    return NextResponse.json(projectsWithChapters);
+    // Provide default tier if user has no subscription
+    const tierName = userInfo[0]?.tier_name || 'Free';
+    const maxProjectCount = userInfo[0]?.max_project_count ?? 3; // Default to 3 for free tier
+    
+    return NextResponse.json({
+      projects: projectsWithChapters,
+      subscription: {
+        tier_name: tierName,
+        max_project_count: maxProjectCount,
+        current_project_count: projects.length
+      }
+    });
   } catch (error) {
     console.error('Failed to fetch projects:', error);
     return NextResponse.json(
@@ -81,11 +101,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check user's subscription tier and current project count
+    const userInfo = await sql`
+      SELECT 
+        u.subscription_tier_id,
+        st.max_project_count,
+        (SELECT COUNT(*) FROM projects WHERE user_id = u.id) as current_project_count
+      FROM users u
+      LEFT JOIN subscription_tiers st ON u.subscription_tier_id = st.id
+      WHERE u.id = ${session.user.id}
+    `;
+
+    const maxProjects = userInfo[0]?.max_project_count ?? 3; // Default to 3 for free tier
+    const currentProjects = userInfo[0]?.current_project_count || 0;
+
+    if (currentProjects >= maxProjects) {
+      return NextResponse.json(
+        { 
+          error: 'Project limit reached',
+          message: `You have reached the maximum number of projects (${maxProjects}) for your subscription tier. Please upgrade to create more projects.`,
+          current_count: currentProjects,
+          max_count: maxProjects
+        },
+        { status: 403 }
+      );
+    }
+
     const { title, description, word_count_goal } = await request.json();
+
+    // Validate input
+    if (!title || !description) {
+      return NextResponse.json(
+        { error: 'Title and description are required' },
+        { status: 400 }
+      );
+    }
 
     const result = await sql`
       INSERT INTO projects (user_id, title, description, word_count_goal, status, visibility)
-      VALUES (${session.user.id}, ${title}, ${description}, ${word_count_goal}, 'active', 'private')
+      VALUES (${session.user.id}, ${title}, ${description}, ${word_count_goal || 50000}, 'active', 'private')
       RETURNING id
     `;
 
@@ -97,7 +151,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { 
         error: 'Failed to create project',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error : 'Unknown error'
       },
       { status: 500 }
     );
