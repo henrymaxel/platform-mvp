@@ -465,26 +465,53 @@ export default function WritingStudio() {
   };
 
   const handleExport = async () => {
-    if (!activeChapter) return;
+    if (!activeProject || !activeProject.chapters || activeProject.chapters.length === 0) return;
 
     try {
-      // Create a blob with the content
-      const blob = new Blob([content], { type: 'text/markdown' });
+      // Create combined content with all chapters
+      let combinedContent = "";
 
+      // Sort chapters by chapter_number
+      const sortedChapters = [...activeProject.chapters].sort((a, b) => a.chapter_number - b.chapter_number);
+
+      // Add each chapter with a title header
+      sortedChapters.forEach((chapter, index) => {
+        // Only add page break after the first chapter
+        if (index > 0) {
+          // Markdown page break
+          combinedContent += "\n\n---\n\n";
+        }
+
+        // Add chapter title as header
+        combinedContent += `# ${chapter.title}\n\n`;
+
+        // Add chapter content
+        // If this is the active chapter, use the current content in the editor
+        const chapterContent = chapter.id === activeChapter?.id ? content : chapter.content;
+        combinedContent += chapterContent || "";
+      });
+
+      // Create a blob with the content
+      const blob = new Blob([combinedContent], { type: 'text/markdown' });
+
+      // Generate filename from project title
+      const filename = `${activeProject.title.replace(/\s+/g, '_')}.md`;
+
+      // Create download link
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${activeChapter.title.replace(/\s+/g, '_')}.md`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
-      
+
       // Cleanup
       setTimeout(() => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       }, 100);
     } catch (error) {
-      console.log('Failed to export content: ', error);
+      console.error('Failed to export content:', error);
     }
   };
 
