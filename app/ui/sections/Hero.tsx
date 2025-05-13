@@ -8,8 +8,8 @@ export default function Hero() {
       <div className="container mx-auto max-w-7xl">
         <div className="flex flex-col md:flex-row items-center">
           <div className="md:w-1/2 mb-12 md:mb-0 md:pr-12">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-              Unleash Your <span className="bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">Creative Potential</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6 bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">
+            The&nbsp;Boring Platform
             </h1>
             <p className='text-xl mb-8 text-gray-300'>
               The all-in-one platform for writers to create, publish, and monetize their work with powerful AI assistance.

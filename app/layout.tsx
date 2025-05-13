@@ -4,7 +4,7 @@ import "./globals.css";
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: "Company A",
+  title: "The Boring Platform",
   description: "All-in-One Reading, Writing & Publishing Platform Powered by AI.",
 };
 

@@ -23,6 +23,7 @@ import {
   Pencil,
   Trash2,
   FolderPlus,
+  Download,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useDebounce } from '@/app/hooks/useDebounce';
@@ -463,6 +464,30 @@ export default function WritingStudio() {
     }
   };
 
+  const handleExport = async () => {
+    if (!activeChapter) return;
+
+    try {
+      // Create a blob with the content
+      const blob = new Blob([content], { type: 'text/markdown' });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${activeChapter.title.replace(/\s+/g, '_')}.md`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.log('Failed to export content: ', error);
+    }
+  };
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -672,6 +697,20 @@ return (
               <Save size={16} />
               <span>{isSaving ? 'Saving...' : 'Save'}</span>
             </button>
+            
+            <button
+              onClick={handleExport}
+              disabled={!activeChapter}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded text-sm ${
+                !activeChapter
+                ? 'bg-gray-600 opacity-50'
+                : 'bg-myred-600 hover:bg-myred-700'
+                }`}
+            >
+              <Download size={16}/>
+              Export
+            </button>
+
             {activeChapter && (
               <div className="hidden md:flex items-center space-x-2 ml-4">
                 <button 

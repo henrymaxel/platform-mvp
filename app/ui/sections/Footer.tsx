@@ -13,13 +13,13 @@ export default function Footer() {
                     {/* Logo and Company Description */}
                     <div className="lg:col-span-2">
                         <div className='flex items-center mb-6'>
-                            <span className="text-2xl font-bold bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">Company A</span>
+                            <span className="text-2xl font-bold bg-gradient-to-r from-red-500 to-orange-400 bg-clip-text text-transparent">The Boring Platform</span>
                         </div>
                         <p className="mb-6 text-gray-400 max-w-md">
-                            The all-in-one platform for writers to create, publish, and monetize their work with powerful AI assistance.
+                            Write with AI. Publish on-chain. Own it.
                         </p>
                         <div className="flex space-x-5">
-                            <Link href="#" className="text-gray-400 hover:text-myred-500 transition-colors" aria-label="Twitter">
+                            <Link href="https://x.com/aboringplatform" className="text-gray-400 hover:text-myred-500 transition-colors" aria-label="Twitter">
                                 <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors">
                                     <XIcon />
                                 </div>
@@ -70,7 +70,7 @@ export default function Footer() {
                 {/* Copyright */}
                 <div className="mt-12 pt-8 border-t border-gray-800">
                     <div className="flex flex-col md:flex-row justify-between items-center">
-                        <p className="text-gray-500">&copy; {new Date().getFullYear()} Company A. All rights reserved.</p>
+                        <p className="text-gray-500">&copy; {new Date().getFullYear()} The Boring Platform. All rights reserved.</p>
                     </div>
                 </div>
             </div>
