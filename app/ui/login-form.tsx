@@ -1,7 +1,7 @@
 'use client';
 
 import { Mail, Lock, User } from 'lucide-react';
-import { authenticate } from '@/app/lib/actions';
+import { authenticate } from '@/app/lib/actions/actions';
 import { useActionState, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
@@ -23,7 +23,7 @@ export default function LoginForm() {
         <div className="flex mb-6 border-b border-gray-700">
           <button 
             className={`py-2 px-4 font-medium ${activeTab === 'login' 
-              ? `border-b-2 border-red-500 text-red-500` 
+              ? `border-b-2 border-myred-500 text-myred-500` 
               : 'text-gray-400'}`}
             onClick={() => setActiveTab('login')}
           >
@@ -31,7 +31,7 @@ export default function LoginForm() {
           </button>
           <button 
             className={`py-2 px-4 font-medium ${activeTab === 'signup' 
-                ? `border-b-2 border-red-500 text-red-500` 
+                ? `border-b-2 border-myred-500 text-myred-500` 
                 : 'text-gray-400'}`}
             onClick={() => setActiveTab('signup')}
           >
@@ -39,7 +39,7 @@ export default function LoginForm() {
           </button>
         </div>
         {errorMessage && (
-          <div className="bg-red-500 text-white p-3 rounded-md mb-4">
+          <div className="bg-myred-500 text-white p-3 rounded-md mb-4">
             {errorMessage}
           </div>
         )}
@@ -59,7 +59,7 @@ export default function LoginForm() {
                   type="email"
                   id="email"
                   name="email"
-                  className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-red-500 focus:border-red-500 border'
+                  className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-myred-500 focus:border-myred-500 border'
                   placeholder="name@example.com"
                   required
                 />
@@ -77,7 +77,7 @@ export default function LoginForm() {
                   type="password"
                   id="password"
                   name="password"
-                  className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-red-500 focus:border-red-500 border'
+                  className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-myred-500 focus:border-myred-500 border'
                   placeholder="••••••••"
                   required
                 />
@@ -88,20 +88,20 @@ export default function LoginForm() {
                 <input
                   id="remember"
                   type="checkbox"
-                  className="w-4 h-4 border rounded focus:ring-3 focus:ring-red-300 bg-gray-700 border-gray-600"
+                  className="w-4 h-4 border rounded focus:ring-3 focus:ring-myred-300 bg-gray-700 border-gray-600"
                 />
                 <label htmlFor="remember" className='ml-2 text-sm text-gray-300'>
                   Remember me
                 </label>
               </div>
-              <a href="#" className="text-sm font-medium text-red-500 hover:underline">
+              <a href="#" className="text-sm font-medium text-myred-500 hover:underline">
                 Forgot password?
               </a>
             </div>
             <input type="hidden" name="redirectTo" value={callbackUrl} />
             <button
               type="submit"
-              className="w-full py-2.5 px-5 text-white bg-red-600 rounded-lg hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium"
+              className="w-full py-2.5 px-5 text-white bg-myred-600 rounded-lg hover:bg-myred-700 focus:ring-4 focus:ring-myred-300 font-medium"
               disabled={isPending}
             >
               {isPending ? 'Logging in...' : 'Log in'}
@@ -126,7 +126,7 @@ export default function LoginForm() {
                     type="text"
                     id="first-name"
                     name="firstName" 
-                    className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-red-500 focus:border-red-500 border'
+                    className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-myred-500 focus:border-myred-500 border'
                     placeholder="John"
                     required
                   />
@@ -144,7 +144,7 @@ export default function LoginForm() {
                     type="text"
                     id="last-name"
                     name="lastName"
-                    className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-red-500 focus:border-red-500 border'
+                    className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-myred-500 focus:border-myred-500 border'
                     placeholder="Doe"
                     required
                   />
@@ -163,7 +163,7 @@ export default function LoginForm() {
                   type="email"
                   id="signup-email"
                   name="email"
-                  className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-red-500 focus:border-red-500 border'
+                  className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-myred-500 focus:border-myred-500 border'
                   placeholder="name@example.com"
                   required
                 />
@@ -181,7 +181,7 @@ export default function LoginForm() {
                   type="password"
                   id="signup-password"
                   name="password" 
-                  className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-red-500 focus:border-red-500 border'
+                  className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-myred-500 focus:border-myred-500 border'
                   placeholder="••••••••"
                   required
                 />
@@ -195,17 +195,17 @@ export default function LoginForm() {
                   value="accepted"
                   name="terms"
                   {...(termsAgreed ? { checked: true } : {})}
-                  className="w-4 h-4 border rounded focus:ring-3 focus:ring-red-300 bg-gray-700 border-gray-600"
+                  className="w-4 h-4 border rounded focus:ring-3 focus:ring-myred-300 bg-gray-700 border-gray-600"
                   onChange={(e) => setTermsAgreed(e.target.checked)}
                 />
               </div>
               <label htmlFor="terms" className='ml-2 text-sm text-gray-300'>
                 By signing up, you agree to our{' '}
-                <a href="#" className="text-red-500 hover:underline">
+                <a href="#" className="text-myred-500 hover:underline">
                   Terms
                 </a>{' '}
                 and{' '}
-                <a href="#" className="text-red-500 hover:underline">
+                <a href="#" className="text-myred-500 hover:underline">
                   Privacy Policy
                 </a>
               </label>
@@ -215,7 +215,7 @@ export default function LoginForm() {
               type="submit"
               className={`w-full py-2.5 px-5 text-white rounded-lg font-medium ${
                 termsAgreed 
-                  ? 'bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300' 
+                  ? 'bg-myred-600 hover:bg-myred-700 focus:ring-4 focus:ring-myred-300' 
                   : 'bg-gray-400 cursor-not-allowed'
               }`}
               disabled={!termsAgreed || isPending}

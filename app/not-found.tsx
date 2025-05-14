@@ -30,10 +30,10 @@ export default function NotFound() {
       <div className="text-center max-w-2xl mx-auto">
         {/* Animated 404 with glitch effect */}
         <div className="relative mb-8">
-          <h1 className="text-8xl md:text-9xl font-bold text-red-500 animate-pulse select-none">
+          <h1 className="text-8xl md:text-9xl font-bold text-myred-500 animate-pulse select-none">
             {glitchText}
           </h1>
-          <div className="absolute inset-0 text-8xl md:text-9xl font-bold text-red-500 opacity-50 animate-ping">
+          <div className="absolute inset-0 text-8xl md:text-9xl font-bold text-myred-500 opacity-50 animate-ping">
             404
           </div>
         </div>
@@ -54,7 +54,7 @@ export default function NotFound() {
               href="/"
               className="bg-gray-800 hover:bg-gray-700 p-6 rounded-lg transition-all max-w-sm w-full transform hover:scale-105"
             >
-              <div className="text-red-500 mb-2 font-semibold text-xl">Home Page</div>
+              <div className="text-myred-500 mb-2 font-semibold text-xl">Home Page</div>
               <p className="text-sm text-gray-400">Return to the home page</p>
             </Link>
           </div>

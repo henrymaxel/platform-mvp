@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 schema.sql
+
+scripts/*
+
+/app/api/chapters_to_delete
+/app/api/projects_to_delete

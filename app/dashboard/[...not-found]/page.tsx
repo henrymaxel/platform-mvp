@@ -28,10 +28,10 @@ export default function DashboardNotFound() {
         <div className="text-center max-w-2xl mx-auto">
           {/* 404 with typewriter effect */}
           <div className="mb-8">
-            <h1 className="text-7xl md:text-8xl font-bold text-red-500 mb-4">
+            <h1 className="text-7xl md:text-8xl font-bold text-myred-500 mb-4">
               404
             </h1>
-            <div className="h-1 w-24 bg-red-500 mx-auto mb-6"></div>
+            <div className="h-1 w-24 bg-myred-500 mx-auto mb-6"></div>
           </div>
 
           {/* Creative message */}
@@ -51,7 +51,7 @@ export default function DashboardNotFound() {
               href="/dashboard"
               className="bg-gray-800 hover:bg-gray-700 p-6 rounded-lg transition-all group"
             >
-              <Home size={24} className="text-red-500 mb-3 mx-auto group-hover:scale-110 transition-transform" />
+              <Home size={24} className="text-myred-500 mb-3 mx-auto group-hover:scale-110 transition-transform" />
               <h3 className="font-semibold mb-1">Dashboard</h3>
               <p className="text-sm text-gray-400">Return to home base</p>
             </Link>

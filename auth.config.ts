@@ -5,6 +5,17 @@ import bcrypt from 'bcryptjs';
 import { getUser } from '@/app/lib/database';
 
 export const authConfig: NextAuthConfig = {
+  cookies: {
+    csrfToken: {
+      name: 'next-auth.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
+  },
   session: {
     strategy: "jwt"
   },
