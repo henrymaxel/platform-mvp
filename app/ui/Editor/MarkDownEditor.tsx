@@ -1,5 +1,6 @@
 // app/ui/Editor/MarkDownEditor.tsx
 import React, { useEffect, useRef, useState } from 'react';
+import styles from './editor.module.css';
 
 interface MarkdownEditorProps {
   value: string;
@@ -137,12 +138,12 @@ export function MarkdownEditor({
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className={styles.editorContainer}>
       {/* Toggle Preview Button */}
-      <div className="flex justify-end mb-2">
+      <div className={styles.togglePreview}>
         <button
           onClick={() => setIsPreview(!isPreview)}
-          className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+          className={styles.toggleButton}
         >
           {isPreview ? 'Edit' : 'Preview'}
         </button>
@@ -151,11 +152,9 @@ export function MarkdownEditor({
       {/* Editor/Preview Area */}
       {isPreview ? (
         <div 
-          className={`w-full h-full p-4 bg-gray-900 text-white border border-gray-700 rounded overflow-auto ${className}`}
-          style={{ minHeight: '500px' }}
+          className={`${styles.editorArea} prose prose-invert max-w-none ${className}`}
         >
           <div 
-            className="prose prose-invert max-w-none"
             dangerouslySetInnerHTML={renderPreview(value)}
           />
         </div>
@@ -166,15 +165,14 @@ export function MarkdownEditor({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`w-full h-full p-4 bg-gray-900 text-white border border-gray-700 rounded font-mono focus:outline-none focus:ring-2 focus:ring-myred-500 ${className}`}
-          style={{ minHeight: '500px', resize: 'none' }}
+          className={`${styles.textarea} ${className}`}
         />
       )}
 
       {/* Status bar with word count */}
-      <div className="mt-2 text-sm text-gray-400">
+      <div className={styles.statusBar}>
         {!isPreview && (
-          <div className="flex gap-4">
+          <div className={styles.keyboardShortcuts}>
             <span>Ctrl+B: Bold</span>
             <span>Ctrl+I: Italic</span>
           </div>

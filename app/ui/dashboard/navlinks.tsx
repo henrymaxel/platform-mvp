@@ -11,7 +11,7 @@ import {
 import clsx from 'clsx';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOutAction } from '@/app/lib/actions';
+import { signOutAction } from '@/app/lib/actions/actions';
 
 // Map of links to display in the side navigation.
 const links = [

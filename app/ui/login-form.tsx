@@ -1,7 +1,7 @@
 'use client';
 
 import { Mail, Lock, User } from 'lucide-react';
-import { authenticate } from '@/app/lib/actions';
+import { authenticate } from '@/app/lib/actions/actions';
 import { useActionState, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 

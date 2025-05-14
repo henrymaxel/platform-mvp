@@ -1,4 +1,3 @@
-//app/dashboard/studio/page.tsx
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -30,6 +29,17 @@ import { useDebounce } from '@/app/hooks/useDebounce';
 import { MarkdownEditor } from '@/app/ui/Editor/MarkDownEditor';
 import NewProjectDialog from '@/app/ui/Editor/NewProjectDialog';
 import DeleteProjectDialog from '@/app/ui/Editor/DeleteProjectDialog';
+import { 
+  getProjects, 
+  createProject as createProjectAction, 
+  deleteProject as deleteProjectAction 
+} from '@/app/lib/actions/projects';
+import { 
+  createChapter as createChapterAction, 
+  updateChapter as updateChapterAction 
+} from '@/app/lib/actions/chapters';
+import LoadingStudio from './loading';
+
 
 // Types
 interface Chapter {
@@ -135,28 +145,20 @@ export default function WritingStudio() {
     }
   }, [debouncedContent]);
 
+
   const fetchProjects = async () => {
     try {
       setError(null);
-      const response = await fetch('/api/projects', {
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
+      const data = await getProjects();
+
       setProjects(data.projects || []);
       setSubscription(data.subscription || null);
-      
-      // Set the first project and chapter as active
+
       if (data.projects && data.projects.length > 0) {
         const firstProject = data.projects[0];
         setActiveProject(firstProject);
         setExpandedProjects([firstProject.id]);
-        
+      
         if (firstProject.chapters && firstProject.chapters.length > 0) {
           const firstChapter = firstProject.chapters[0];
           setActiveChapter(firstChapter);
@@ -164,7 +166,7 @@ export default function WritingStudio() {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch projects:', error);
+      console.error('Failed to fetch projects: ', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch projects');
     } finally {
       setIsLoading(false);
@@ -173,25 +175,22 @@ export default function WritingStudio() {
 
   const createNewProject = async (projectData: { title: string; description: string; word_count_goal: number }) => {
     setIsCreatingProject(true);
-    
-    try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(projectData),
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create project');
-      }
+    try {
+      // Convert to FormData
+      const formData = new FormData();
+      formData.append('title', projectData.title);
+      formData.append('description', projectData.description);
+      formData.append('word_count_goal', projectData.word_count_goal.toString());
+      
+      // Call the imported createProjectAction
+      await createProjectAction(formData);
 
       // Refresh projects list
       await fetchProjects();
       setShowNewProjectDialog(false);
     } catch (error) {
-      console.error('Failed to create project:', error);
+      console.error('Failed to create project: ', error);
       alert(error instanceof Error ? error.message : 'Failed to create project');
     } finally {
       setIsCreatingProject(false);
@@ -200,18 +199,12 @@ export default function WritingStudio() {
 
   const deleteProject = async () => {
     if (!projectToDelete) return;
-    
-    setIsDeletingProject(true);
-    
-    try {
-      const response = await fetch(`/api/projects/${projectToDelete.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete project');
-      }
+    setIsDeletingProject(true);
+
+    try {
+      // Call the imported deleteProjectAction
+      await deleteProjectAction(projectToDelete.id);
 
       // If the deleted project was active, clear it
       if (activeProject?.id === projectToDelete.id) {
@@ -220,12 +213,12 @@ export default function WritingStudio() {
         setContent('');
       }
 
-      // Refresh projects list
+      // Refresh project list
       await fetchProjects();
       setShowDeleteDialog(false);
       setProjectToDelete(null);
     } catch (error) {
-      console.error('Failed to delete project:', error);
+      console.error('Failed to delete project: ', error);
       alert('Failed to delete project');
     } finally {
       setIsDeletingProject(false);
@@ -238,35 +231,30 @@ export default function WritingStudio() {
     setIsSaving(true);
     
     try {
-      const response = await fetch(`/api/chapters/${activeChapter.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          content,
-          word_count: wordCount,
-        }),
-      });
-
-      if (response.ok) {
-        const savedData = await response.json();
-        setLastSaved(new Date());
-        
-        // Update local state
-        setActiveChapter(prev => prev ? { ...prev, content, words: wordCount } : null);
-        setProjects(prev => prev.map(proj => 
-          proj.id === activeProject.id 
-            ? {
-                ...proj,
-                chapters: proj.chapters.map(ch => 
-                  ch.id === activeChapter.id 
-                    ? { ...ch, content, words: wordCount }
-                    : ch
-                )
-              }
-            : proj
-        ));
-      }
+      // Convert to FormData
+      const formData = new FormData();
+      formData.append('content', content);
+      formData.append('word_count', wordCount.toString());
+      
+      // Call the updateChapterAction
+      await updateChapterAction(activeChapter.id, formData);
+      
+      setLastSaved(new Date());
+      
+      // Update local state
+      setActiveChapter(prev => prev ? { ...prev, content, words: wordCount } : null);
+      setProjects(prev => prev.map(proj => 
+        proj.id === activeProject.id 
+          ? {
+              ...proj,
+              chapters: proj.chapters.map(ch => 
+                ch.id === activeChapter.id 
+                  ? { ...ch, content, words: wordCount }
+                  : ch
+              )
+            }
+          : proj
+      ));
     } catch (error) {
       console.error('Failed to save content:', error);
     } finally {
@@ -281,50 +269,96 @@ export default function WritingStudio() {
     setShowChapterDialog(true);
   };
 
-  const createChapter = async () => {
+  const createChapter = async () => { 
     if (!activeProject || !newChapterTitle.trim()) return;
 
     try {
-      const response = await fetch('/api/chapters', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          project_id: activeProject.id,
-          title: newChapterTitle.trim(),
-          chapter_number: activeProject.chapters.length + 1,
-        }),
-      });
+      // Convert to FormData
+      const formData = new FormData();
+      formData.append('project_id', activeProject.id);
+      formData.append('title', newChapterTitle.trim());
+      formData.append('chapter_number', (activeProject.chapters.length + 1).toString());
+      
+      // Call the imported createChapterAction
+      const newChapter = await createChapterAction(formData);
 
-      if (response.ok) {
-        const newChapter = await response.json();
-        
-        // Update local state
-        setProjects(prev => prev.map(proj => 
-          proj.id === activeProject.id 
-            ? {
-                ...proj,
-                chapters: [...proj.chapters, newChapter]
-              }
-            : proj
-        ));
-        
-        // Update active project
-        setActiveProject(prev => prev ? {
-          ...prev,
-          chapters: [...prev.chapters, newChapter]
-        } : null);
-        
-        // Switch to the new chapter
-        setActiveChapter(newChapter);
-        setContent(newChapter.content || '');
-        
-        // Close dialog and reset
-        setShowChapterDialog(false);
-        setNewChapterTitle('');
-      }
+      // Update local state
+      setProjects(prev => prev.map(proj => 
+        proj.id === activeProject.id 
+          ? {
+              ...proj,
+              chapters: [...proj.chapters, newChapter]
+            }
+          : proj
+      ));
+
+      setActiveProject(prev => prev ? {
+        ...prev,
+        chapters: [...prev.chapters, newChapter]
+      } : null);
+
+      // Switch to the new chapter
+      setActiveChapter(newChapter);
+      setContent(newChapter.content || '');
+
+      // Close dialog and reset
+      setShowChapterDialog(false);
+      setNewChapterTitle('');
     } catch (error) {
       console.error('Failed to create chapter:', error);
+    }
+  };
+
+  const updateChapterTitle = async (chapterId: string, fromMainTitle: boolean = false) => {
+    const titleToUpdate = fromMainTitle ? mainTitleEdit : editingTitle;
+    if (!titleToUpdate.trim() || !activeProject) return;
+
+    try {
+      // Convert to FormData
+      const formData = new FormData();
+      formData.append('title', titleToUpdate.trim());
+      
+      // Call the updateChapterAction
+      await updateChapterAction(chapterId, formData);
+
+      // Update local state
+      setProjects(prev => prev.map(proj => 
+        proj.id === activeProject.id 
+        ? {
+            ...proj,
+            chapters: proj.chapters.map(ch => 
+              ch.id === chapterId
+                ? { ...ch, title: titleToUpdate.trim() }
+                : ch
+            )
+          }
+        : proj
+      ));
+
+      // Update active chapter
+      if (activeChapter?.id === chapterId) {
+        setActiveChapter(prev => prev ? { ...prev, title: titleToUpdate.trim() } : null);
+      }
+
+      // Update active project
+      setActiveProject(prev => prev ? {
+        ...prev,
+        chapters: prev.chapters.map(ch => 
+          ch.id === chapterId
+            ? { ...ch, title: titleToUpdate.trim() }
+            : ch
+        )
+      } : null);
+
+      if (fromMainTitle) {
+        setIsEditingMainTitle(false);
+        setMainTitleEdit('');
+      } else {
+        setEditingChapter(null);
+        setEditingTitle('');
+      }
+    } catch (error) {
+      console.error('Failed to update chapter title:', error);
     }
   };
 
@@ -387,64 +421,6 @@ export default function WritingStudio() {
     if (diff < 60) return 'Just now';
     if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
     return `${Math.floor(diff / 3600)} hours ago`;
-  };
-
-  const updateChapterTitle = async (chapterId: string, fromMainTitle: boolean = false) => {
-    const titleToUpdate = fromMainTitle ? mainTitleEdit : editingTitle;
-    if (!titleToUpdate.trim() || !activeProject) return;
-    
-    try {
-      const response = await fetch(`/api/chapters/${chapterId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          title: titleToUpdate.trim(),
-        }),
-      });
-
-      if (response.ok) {
-        // Update local state
-        setProjects(prev => prev.map(proj => 
-          proj.id === activeProject.id 
-            ? {
-                ...proj,
-                chapters: proj.chapters.map(ch => 
-                  ch.id === chapterId 
-                    ? { ...ch, title: titleToUpdate.trim() }
-                    : ch
-                )
-              }
-            : proj
-        ));
-        
-        // Update active chapter
-        if (activeChapter?.id === chapterId) {
-          setActiveChapter(prev => prev ? { ...prev, title: titleToUpdate.trim() } : null);
-        }
-        
-        // Update active project
-        setActiveProject(prev => prev ? {
-          ...prev,
-          chapters: prev.chapters.map(ch => 
-            ch.id === chapterId 
-              ? { ...ch, title: titleToUpdate.trim() }
-              : ch
-          )
-        } : null);
-        
-        // Reset editing state
-        if (fromMainTitle) {
-          setIsEditingMainTitle(false);
-          setMainTitleEdit('');
-        } else {
-          setEditingChapter(null);
-          setEditingTitle('');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to update chapter title:', error);
-    }
   };
 
   const handleProjectSelect = (project: Project) => {
@@ -532,14 +508,7 @@ export default function WritingStudio() {
   }
   
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-full">
-        <div className="text-center">
-          <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-solid border-myred-500 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-          <h2 className="mt-4 text-xl font-semibold text-white">Loading your writing studio...</h2>
-        </div>
-      </div>
-    );
+    <LoadingStudio />
   }
 
 return (

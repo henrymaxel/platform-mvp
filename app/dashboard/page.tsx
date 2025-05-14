@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Edit, BookOpen } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import LoadingDashbaord from './loading';
 
 export default function Dashboard() {
   const [greeting, setGreeting] = useState('');
@@ -26,14 +27,7 @@ export default function Dashboard() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-full">
-        <div className="text-center">
-          <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-solid border-myred-500 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-          <h2 className="mt-4 text-xl font-semibold text-white">Loading your dashboard...</h2>
-        </div>
-      </div>
-    );
+    <LoadingDashbaord />
   }
 
   return (
