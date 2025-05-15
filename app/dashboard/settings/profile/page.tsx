@@ -69,8 +69,15 @@ export default function ProfileSettingsPage() {
         submitData.append(key, value);
       });
       
-      await updateProfile(submitData);
-      
+      const fileInput = document.getElementById('profile_picture') as HTMLInputElement;
+      if (fileInput?.files?.[0]) {
+        submitData.append('profile_picture', fileInput.files[0]);
+      }
+
+      console.log('Submitting profile update with data: ', Object.fromEntries(submitData.entries()));
+      const result = await updateProfile(submitData);
+      console.log('Profile update result: ', result);
+
       // Update local profile data
       setProfile(prev => ({
         ...prev,
@@ -85,6 +92,7 @@ export default function ProfileSettingsPage() {
       setSaving(false);
     }
   };
+
 
   if (status === 'loading' || loading) {
     return <LoadingDashboard />;

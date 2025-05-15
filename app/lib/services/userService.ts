@@ -85,11 +85,16 @@ export async function createUser(userData: {
  */
 export async function updateUserProfile(userId: string, data: Partial<UserProfile>): Promise<User> {
   try {
+    console.log(`Updating profile for user ${userId} with data:`, data);
+    
     // Ensure userId exists
     const existingUser = await getUserById(userId);
     if (!existingUser) {
+      console.error(`User with ID ${userId} not found`);
       throw new Error('User not found');
     }
+    
+    console.log('Existing user found:', existingUser.id);
     
     // Update all fields in a single query
     const result = await sql<User[]>`
@@ -101,15 +106,23 @@ export async function updateUserProfile(userId: string, data: Partial<UserProfil
         twitter_link = ${data.twitter_link ?? existingUser.twitter_link},
         instagram_link = ${data.instagram_link ?? existingUser.instagram_link},
         tiktok_link = ${data.tiktok_link ?? existingUser.tiktok_link},
+        profile_picture_url = ${data.profile_picture_url ?? existingUser.profile_picture_url},
+        public_profile = ${data.public_profile ?? existingUser.public_profile},
+        show_email = ${data.show_email ?? existingUser.show_email},
+        show_social = ${data.show_social ?? existingUser.show_social},
         updated_at = NOW()
       WHERE id = ${userId}
       RETURNING *
     `;
     
+    console.log('SQL update result:', result);
+    
     if (result.length === 0) {
+      console.error('No rows updated');
       throw new Error('Failed to update user');
     }
     
+    console.log('Profile updated successfully');
     return result[0];
   } catch (error) {
     console.error('Failed to update user profile:', error);

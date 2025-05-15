@@ -8,7 +8,8 @@ import {
   Bell, 
   Lock, 
   Shield, 
-  ChevronRight 
+  ChevronRight,
+  BookOpen
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -43,6 +44,13 @@ export default function SettingsPage() {
       href: '/dashboard/settings/notifications',
       color: 'text-yellow-500',
     },
+    {
+      title: 'My Publications',
+      description: 'Manage your published content',
+      icon: BookOpen,
+      href: '/dashboard/settings/publications',
+      color: 'text-orange-500',
+    },
   ];
 
   return (
@@ -59,7 +67,7 @@ export default function SettingsPage() {
                 onClick={() => router.push(option.href)}
                 className="bg-gray-800 rounded-lg p-4 shadow-lg flex items-center cursor-pointer hover:bg-gray-700 transition-colors"
               >
-                <div className={`p-3 rounded-full ${option.color.replace('text', 'bg')} bg-opacity-20 mr-4`}>
+                <div className={`p-3 rounded-full bg-opacity-20 mr-4`}>
                   <IconComponent className={option.color} size={24} />
                 </div>
                 <div className="flex-1">

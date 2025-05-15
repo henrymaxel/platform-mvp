@@ -17,8 +17,25 @@ export type User = {
   subscription_tier_id: number | null;
   terms_accepted: boolean;
   terms_accepted_at: Date | null;
+  public_profile: boolean;
+  show_email: boolean;
+  show_social: boolean;
+  username: string | null;
   created_at: Date;
   updated_at: Date;
+}
+
+export type UserProfile = {
+  first_name?: string;
+  last_name?: string;
+  author_bio?: string | null;
+  profile_picture_url?: string | null;
+  twitter_link?: string | null;
+  instagram_link?: string | null;
+  tiktok_link?: string | null;
+  public_profile?: boolean;
+  show_email?: boolean;
+  show_social?: boolean;
 }
 
 export type AuthUser = {

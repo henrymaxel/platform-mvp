@@ -40,9 +40,12 @@ const ProfileUpdateSchema = z.object({
   first_name: z.string().trim().optional(),
   last_name: z.string().trim().optional(),
   author_bio: z.string().max(500, 'Bio must be 500 characters or less').optional(),
-  twitter_username: z.string().regex(/^[A-Za-z0-9_]{1,15}$/, 'Please enter a valid X username').optional().or(z.literal('')),
-  instagram_username: z.string().regex(/^[A-Za-z0-9_.]{1,30}$/, 'Please enter a valid Instagram username').optional().or(z.literal('')),
-  tiktok_username: z.string().regex(/^[A-Za-z0-9_.]{1,24}$/, 'Please enter a valid TikTok username').optional().or(z.literal(''))
+  twitter_link: z.string().optional().or(z.literal('')),
+  instagram_link: z.string().optional().or(z.literal('')),
+  tiktok_link: z.string().optional().or(z.literal('')),
+  public_profile: z.boolean().optional(),
+  show_email: z.boolean().optional(),
+  show_social: z.boolean().optional()
 });
 
 // Update user profile
@@ -54,6 +57,8 @@ export async function updateProfile(formData: FormData) {
   }
   
   try {
+    console.log('Processing profile update for user:', session.user.id);
+
     // Extract form data
     const profileData = {
       first_name: formData.get('first_name') as string,
@@ -62,53 +67,46 @@ export async function updateProfile(formData: FormData) {
       twitter_link: formData.get('twitter_link') as string,
       instagram_link: formData.get('instagram_link') as string,
       tiktok_link: formData.get('tiktok_link') as string,
+      public_profile: formData.get('public_profile') === 'on' || formData.get('public_profile') === 'true',
+      show_email: formData.get('show_email') === 'on' || formData.get('show_email') === 'true',
+      show_social: formData.get('show_social') === 'on' || formData.get('show_social') === 'true'
     };
+
+    console.log('Extracted profile data: ', profileData);
     
     const profilePicture = formData.get('profile_picture') as File | null;
+    console.log('Profile picture received:', profilePicture ? `File: ${profilePicture.name}` : 'None');
 
     // Validate the data
-    const validatedData = ProfileUpdateSchema.parse(profileData);
+    try {
+      const validatedData = ProfileUpdateSchema.parse(profileData);
+      console.log('Data validation successful:', validatedData);
 
-    let profilePictureUrl: string | undefined;
+      let profilePictureUrl: string | undefined;
 
-    if (profilePicture && profilePicture.size > 0) {
-      profilePictureUrl = await uploadProfilePicture(session.user.id, profilePicture);
+      // Use validated data directly
+      let updatedData = { ...validatedData };
+
+      if (profilePictureUrl) {
+        updatedData.profile_picture_url = profilePictureUrl;
+      }
+      
+      // Update the profile
+      await updateUserProfile(session.user.id, updatedData);
+    
+      // Revalidate cached paths
+      revalidatePath('/dashboard/profile');
+      revalidatePath('/dashboard/settings/profile');
+      revalidatePath('/dashboard');
+    
+      return { success: true };
+
+    } catch (error) {
+      console.error('Data validation failed: ', error);
+      throw error;
     }
     
-    // Build full social links from usernames
-    let updatedData: any = { ...validatedData };
-    
-    if (validatedData.twitter_username) {
-      updatedData.twitter_link = `https://x.com/${validatedData.twitter_username}`;
-    }
-    
-    if (validatedData.instagram_username) {
-      updatedData.instagram_link = `https://instagram.com/${validatedData.instagram_username}`;
-    }
-    
-    if (validatedData.tiktok_username) {
-      updatedData.tiktok_link = `https://tiktok.com/@${validatedData.tiktok_username}`;
-    }
-    
-    // Add profile picture URL if we have one
-    if (profilePictureUrl) {
-      updatedData.profile_picture_url = profilePictureUrl;
-    }
-    
-    // Remove the username fields before updating
-    delete updatedData.twitter_username;
-    delete updatedData.instagram_username;
-    delete updatedData.tiktok_username;
-    
-    // Update the profile
-    await updateUserProfile(session.user.id, updatedData);
-    
-    // Revalidate cached paths
-    revalidatePath('/dashboard/profile');
-    revalidatePath('/dashboard/settings/profile');
-    revalidatePath('/dashboard');
-    
-    return { success: true };
+
   } catch (error) {
     console.error('Failed to update profile:', error);
     if (error instanceof z.ZodError) {
