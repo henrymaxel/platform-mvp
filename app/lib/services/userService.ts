@@ -83,68 +83,32 @@ export async function createUser(userData: {
 /**
  * Update user details
  */
-export async function updateUserProfile(
-  userId: string,
-  profileData: Partial<{
-    first_name: string;
-    last_name: string;
-    profile_picture_url: string;
-    author_bio: string;
-    twitter_link: string;
-    instagram_link: string;
-    tiktok_link: string;
-  }>
-): Promise<User> {
+export async function updateUserProfile(userId: string, data: Partial<UserProfile>): Promise<User> {
   try {
-    // Build dynamic query parts
-    const updateFields = [];
-    const updateValues = [];
-    
-    if (profileData.first_name !== undefined) {
-      updateFields.push('first_name = $1');
-      updateValues.push(profileData.first_name);
+    // Ensure userId exists
+    const existingUser = await getUserById(userId);
+    if (!existingUser) {
+      throw new Error('User not found');
     }
     
-    if (profileData.last_name !== undefined) {
-      updateFields.push('last_name = $2');
-      updateValues.push(profileData.last_name);
-    }
-    
-    if (profileData.profile_picture_url !== undefined) {
-      updateFields.push('profile_picture_url = $3');
-      updateValues.push(profileData.profile_picture_url);
-    }
-    
-    if (profileData.author_bio !== undefined) {
-      updateFields.push('author_bio = $4');
-      updateValues.push(profileData.author_bio);
-    }
-    
-    if (profileData.twitter_link !== undefined) {
-      updateFields.push('twitter_link = $5');
-      updateValues.push(profileData.twitter_link);
-    }
-    
-    if (profileData.instagram_link !== undefined) {
-      updateFields.push('instagram_link = $6');
-      updateValues.push(profileData.instagram_link);
-    }
-    
-    if (profileData.tiktok_link !== undefined) {
-      updateFields.push('tiktok_link = $7');
-      updateValues.push(profileData.tiktok_link);
-    }
-    
-    // Add updated_at field
-    updateFields.push('updated_at = NOW()');
-    
-    // Execute query with the service's query helper
-    const result = await sql`
+    // Update all fields in a single query
+    const result = await sql<User[]>`
       UPDATE users 
-      SET ${sql.unsafe(updateFields.join(', '))}
+      SET 
+        first_name = ${data.first_name ?? existingUser.first_name},
+        last_name = ${data.last_name ?? existingUser.last_name},
+        author_bio = ${data.author_bio ?? existingUser.author_bio},
+        twitter_link = ${data.twitter_link ?? existingUser.twitter_link},
+        instagram_link = ${data.instagram_link ?? existingUser.instagram_link},
+        tiktok_link = ${data.tiktok_link ?? existingUser.tiktok_link},
+        updated_at = NOW()
       WHERE id = ${userId}
       RETURNING *
     `;
+    
+    if (result.length === 0) {
+      throw new Error('Failed to update user');
+    }
     
     return result[0];
   } catch (error) {

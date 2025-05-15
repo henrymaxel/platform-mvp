@@ -111,11 +111,9 @@ export async function registerUser(
   prevState: string | undefined,
   formData: FormData,
 ) {
-
   if (!formData) {
     return "Form data is missing. Please try again.";
   }
-
 
   try {
     // Extract and validate form data
@@ -146,10 +144,10 @@ export async function registerUser(
     
     // Create user with audit
     await withAudit(
-      'system', // System user since no user is logged in yet
+      'system',
       'user_registration',
       'user',
-      validatedData.email, // Use email as ID since user doesn't exist yet
+      validatedData.email,
       async () => {
         return await createUser({
           email: validatedData.email,
@@ -165,19 +163,25 @@ export async function registerUser(
       }
     );
     
-    // revalidatePath('/login');
-    // Redirect to login
-    //   await signIn('credentials', {
-    //   email: validatedData.email,
-    //   password: validatedData.password,
-    //   redirect: true,
-    //   redirectTo: formData.get('redirectTo') as string || '/dashboard'
-    // });
-    const redirectTo = formData.get('redirectTo') as string || '/';
+    // Sign in the user after registration
+    await signIn('credentials', {
+      email: validatedData.email,
+      password: validatedData.password,
+      redirect: false,
+    });
+
+    // Then redirect to dashboard
+    const redirectTo = formData.get('redirectTo') as string || '/dashboard';
     redirect(redirectTo);
 
   } catch (error) {
-    // Any withAudit failures are already logged
+    // Check if this is a redirect "error" (which is not really an error)
+    if (error instanceof Error && (error as any).digest?.startsWith('NEXT_REDIRECT')) {
+      // This is a redirect, not an error - just rethrow it so Next.js can handle it
+      throw error;
+    }
+    
+    // Handle actual errors
     if (error instanceof z.ZodError) {
       return error.errors[0].message;
     }

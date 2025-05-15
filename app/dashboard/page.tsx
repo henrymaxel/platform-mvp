@@ -12,6 +12,10 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   const { data: session } = useSession();
+
+  if (status === 'loading'){
+    return <LoadingDashboard />
+  }
   
   const userName = session?.user?.first_name || 'Demo';
 

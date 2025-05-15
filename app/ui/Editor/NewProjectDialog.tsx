@@ -1,7 +1,7 @@
 // app/ui/dashboard/NewProjectDialog.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 
 interface NewProjectDialogProps {
@@ -23,6 +23,15 @@ export default function NewProjectDialog({
   const [description, setDescription] = useState('');
   const [wordCountGoal, setWordCountGoal] = useState(50000);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+    useEffect(() => {
+    if (isOpen) {
+      setTitle('');
+      setDescription('');
+      setWordCountGoal(50000);
+      setErrors({});
+    }
+  }, [isOpen]);
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
