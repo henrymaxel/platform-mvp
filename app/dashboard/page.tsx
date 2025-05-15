@@ -106,7 +106,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-4 md:p-6 h-full overflow-y-auto">
+    <div className="p-4 md:p-6 h-full overflow-y-auto mt-10">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h2 className="text-xl md:text-2xl font-bold">{greeting}, {userName}!</h2>

@@ -54,7 +54,7 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="p-4 md:p-6 h-full overflow-y-auto">
+    <div className="p-4 md:p-6 h-full overflow-y-auto mt-10">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold mb-6">Settings</h1>
         

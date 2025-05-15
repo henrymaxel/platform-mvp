@@ -43,7 +43,7 @@ export default function DashboardLayout({
         
         
         {/* Page Content */}
-        <main className="flex-1 overflow-hidden bg-gray-900 mt-15 m-auto">
+        <main className="flex-1 overflow-hidden bg-gray-900">
           {children}
         </main>
       </div>
