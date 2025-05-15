@@ -1,30 +1,81 @@
-//app/dashboard/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, Edit, BookOpen, Settings, CreditCard, Bell } from 'lucide-react';
+import { User, Edit, BookOpen, Settings, CreditCard, Bell, ExternalLink } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import LoadingDashboard from './loading';
+import { getDashboardData } from '@/app/lib/actions/dashboard';
+
+// Define types
+interface UserStats {
+  projectCount: number;
+  totalWordCount: number;
+  publishedCount: number;
+  draftCount: number;
+}
+
+interface Activity {
+  id: string;
+  type: string;
+  title: string;
+  timestamp: Date;
+}
+
+interface DashboardData {
+  stats: UserStats;
+  activities: Activity[];
+}
 
 export default function Dashboard() {
   const [greeting, setGreeting] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: session, status } = useSession();
 
   useEffect(() => {
     if (status === 'loading') return;
-    
+
+    // Set greeting based on time of day
     const hour = new Date().getHours();
     if (hour < 12) setGreeting('Good Morning');
     else if (hour < 18) setGreeting('Good Afternoon');
     else setGreeting('Good Evening');
 
-    const timer = setTimeout(() => setIsLoading(false), 1000);
-    return () => clearTimeout(timer);
-  }, [status]);
+    // Fetch dashboard data when session is available
+    fetchDashboardData();
+  }, [status, session]);
+
+  const fetchDashboardData = async () => {
+    try {
+      if (session?.user?.id) {
+        const data = await getDashboardData(5);
+        setDashboardData(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+      setError('Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Formatting timestamp for activity display
+  const formatTimeAgo = (timestamp: Date) => {
+    const now = new Date();
+    const activityDate = new Date(timestamp);
+    const diffInMs = now.getTime() - activityDate.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInDays === 0) return 'today';
+    if (diffInDays === 1) return 'yesterday';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+    return `${Math.floor(diffInDays / 30)} months ago`;
+  };
 
   // Loading state
   if (status === 'loading' || isLoading) {
@@ -35,12 +86,23 @@ export default function Dashboard() {
   const userImage = session?.user?.profile_picture_url || '/fallback_avatar.png';
   const userFullName = `${session?.user?.first_name || ''} ${session?.user?.last_name || ''}`.trim() || 'Demo User';
 
-  // Get stats (this would normally come from your API)
-  const stats = {
-    projectCount: 3,
-    totalWordCount: 14500,
-    publishedStories: 1,
-    draftStories: 2
+  // Set default stats if data failed to load
+  const stats = dashboardData?.stats || {
+    projectCount: 0,
+    totalWordCount: 0,
+    publishedCount: 0,
+    draftCount: 0
+  };
+
+  // Function to get appropriate icon color based on activity type
+  const getActivityColor = (type: string) => {
+    switch (type) {
+      case 'publication': return 'bg-green-500';
+      case 'update': return 'bg-blue-500';
+      case 'creation': return 'bg-yellow-500';
+      case 'comment': return 'bg-purple-500';
+      default: return 'bg-gray-500';
+    }
   };
 
   return (
@@ -50,7 +112,13 @@ export default function Dashboard() {
           <h2 className="text-xl md:text-2xl font-bold">{greeting}, {userName}!</h2>
           <p className="text-gray-400 text-sm md:text-base">Here's an overview of your writing journey.</p>
         </div>
-        
+
+        {error && (
+          <div className="bg-myred-500 text-white p-4 rounded mb-6">
+            {error}
+          </div>
+        )}
+
         {/* Profile and Stats Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Profile Card */}
@@ -70,15 +138,28 @@ export default function Dashboard() {
               </div>
               <h3 className="text-lg font-semibold">{userFullName}</h3>
               <p className="text-gray-400 text-sm mb-4">@{userName.toLowerCase()}</p>
-              <Link 
-                href="/dashboard/settings/profile" 
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-full text-sm flex items-center"
-              >
-                <User size={14} className="mr-2" />
-                Edit Profile
-              </Link>
+
+
+
+              <div className="flex gap-2 mt-4">
+                <Link
+                  href="/dashboard/settings/profile"
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-full text-sm flex items-center"
+                >
+                  <User size={14} className="mr-2" />
+                  Edit Profile
+                </Link>
+                <Link
+                  href={`/user/${userName.toLowerCase()}`}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-full text-sm flex items-center"
+                  target="_blank"
+                >
+                  <ExternalLink size={14} className="mr-2" />
+                  View Public Profile
+                </Link>
+              </div>
             </div>
-            
+
             <div className="mt-6 pt-6 border-t border-gray-700">
               <h4 className="text-sm font-semibold mb-3">Quick Links</h4>
               <div className="space-y-2">
@@ -101,7 +182,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          
+
           {/* Stats Cards */}
           <div className="lg:col-span-2">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
@@ -115,44 +196,42 @@ export default function Dashboard() {
               </div>
               <div className="bg-gray-800 rounded-lg p-4 shadow-lg">
                 <p className="text-gray-400 text-xs uppercase">Published</p>
-                <p className="text-2xl font-bold mt-1">{stats.publishedStories}</p>
+                <p className="text-2xl font-bold mt-1">{stats.publishedCount}</p>
               </div>
               <div className="bg-gray-800 rounded-lg p-4 shadow-lg">
                 <p className="text-gray-400 text-xs uppercase">Drafts</p>
-                <p className="text-2xl font-bold mt-1">{stats.draftStories}</p>
+                <p className="text-2xl font-bold mt-1">{stats.draftCount}</p>
               </div>
             </div>
-            
-            {/* Recent Activity - this would typically come from your API */}
+
+            {/* Recent Activity */}
             <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
               <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
               <div className="space-y-4">
-                <div className="flex items-start">
-                  <div className="w-2 h-2 rounded-full bg-green-500 mt-2 mr-3"></div>
-                  <div>
-                    <p className="text-sm">You published <span className="font-semibold text-white">Getting Started with Next.js</span></p>
-                    <p className="text-xs text-gray-400">2 days ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 mr-3"></div>
-                  <div>
-                    <p className="text-sm">You updated <span className="font-semibold text-white">The Future of AI in Writing</span></p>
-                    <p className="text-xs text-gray-400">4 days ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 rounded-full bg-yellow-500 mt-2 mr-3"></div>
-                  <div>
-                    <p className="text-sm">You started a new project <span className="font-semibold text-white">Web Development Tips</span></p>
-                    <p className="text-xs text-gray-400">1 week ago</p>
-                  </div>
-                </div>
+                {dashboardData?.activities && dashboardData.activities.length > 0 ? (
+                  dashboardData.activities.map((activity, index) => (
+                    <div key={index} className="flex items-start">
+                      <div className={`w-2 h-2 rounded-full ${getActivityColor(activity.type)} mt-2 mr-3`}></div>
+                      <div>
+                        <p className="text-sm">
+                          {activity.type === 'publication' && 'You published '}
+                          {activity.type === 'update' && 'You updated '}
+                          {activity.type === 'creation' && 'You started a new project '}
+                          {activity.type === 'comment' && 'You commented on '}
+                          <span className="font-semibold text-white">{activity.title}</span>
+                        </p>
+                        <p className="text-xs text-gray-400">{formatTimeAgo(activity.timestamp)}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-400 text-sm">No recent activity found.</p>
+                )}
               </div>
             </div>
           </div>
         </div>
-        
+
         {/* Quick Actions */}
         <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -165,7 +244,7 @@ export default function Dashboard() {
               <p className="text-gray-400 text-sm md:text-base text-center">Create and manage your writing projects</p>
             </div>
           </Link>
-          
+
           <Link href="/dashboard/reading" className="bg-gray-800 rounded-lg p-6 shadow-lg hover:bg-gray-700 transition-all">
             <div className="flex flex-col items-center">
               <div className="p-4 bg-purple-500 rounded-full mb-4">
@@ -175,7 +254,7 @@ export default function Dashboard() {
               <p className="text-gray-400 text-sm md:text-base text-center">Explore published content from all authors</p>
             </div>
           </Link>
-          
+
           <Link href="/dashboard/settings/publications" className="bg-gray-800 rounded-lg p-6 shadow-lg hover:bg-gray-700 transition-all">
             <div className="flex flex-col items-center">
               <div className="p-4 bg-orange-500 rounded-full mb-4">

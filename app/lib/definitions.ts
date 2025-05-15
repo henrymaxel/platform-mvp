@@ -94,3 +94,35 @@ export type ProjectsWithSubscription = {
     current_project_count: number;
   };
 };
+
+export type Publication = {
+  id: string;
+  project_id: string;
+  title: string;
+  publisher?: string;
+  status: string; // 'pending', 'published', 'rejected'
+  isbn?: string;
+  metadata_cid?: string;
+  cover_cid?: string; 
+  first_edition_timestamp?: string;
+  version?: string;
+  rejection_reason?: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  views_count?: number;
+  unique_readers_count?: number;
+  completion_rate?: number;
+};
+
+export type LibraryMetadata = {
+  id: string;
+  publication_id: string;
+  genre: string;
+  tags: string[]; // Stored as JSON in DB
+  keywords: string;
+  language: string;
+  reading_time_estimate: number;
+  created_at: string;
+  updated_at: string;
+};

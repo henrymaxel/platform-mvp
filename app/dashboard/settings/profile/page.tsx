@@ -223,7 +223,79 @@ export default function ProfileSettingsPage() {
                 </div>
               </div>
             </div>
+
+            <div>
+            <h3 className="text-lg font-semibold mb-3">Privacy Settings</h3>
+            <div className="bg-gray-700 p-4 rounded mb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium">Public Profile</h4>
+                  <p className="text-sm text-gray-400">
+                    Make your profile visible to other users
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="public_profile"
+                    className="sr-only peer"
+                    checked={formData.public_profile || false}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      public_profile: e.target.checked
+                    }))}
+                  />
+                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-myred-500"></div>
+                </label>
+              </div>
+            </div>
             
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium">Show Email</h4>
+                  <p className="text-sm text-gray-400">
+                    Allow others to see your email address
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="show_email"
+                    className="sr-only peer"
+                    checked={formData.show_email || false}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      show_email: e.target.checked
+                    }))}
+                  />
+                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-myred-500"></div>
+                </label>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium">Show Social Links</h4>
+                  <p className="text-sm text-gray-400">
+                    Display your social media links on your profile
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="show_social"
+                    className="sr-only peer"
+                    checked={formData.show_social || false}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      show_social: e.target.checked
+                    }))}
+                  />
+                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-myred-500"></div>
+                </label>
+              </div>
+            </div>
+          </div>
             <div className="pt-4">
               <button
                 type="submit"

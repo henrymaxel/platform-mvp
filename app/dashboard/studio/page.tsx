@@ -23,6 +23,7 @@ import {
   Trash2,
   FolderPlus,
   Download,
+  ArrowUpFromLine,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useDebounce } from '@/app/hooks/useDebounce';
@@ -39,6 +40,7 @@ import {
   updateChapter as updateChapterAction 
 } from '@/app/lib/actions/chapters';
 import LoadingStudio from './loading';
+import PublishDialog from '@/app/ui/Editor/PublishDialog';
 
 
 // Types
@@ -79,6 +81,7 @@ export default function WritingStudio() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
   
   // UI State
   const [isDocumentOutlineCollapsed, setIsDocumentOutlineCollapsed] = useState(false);
@@ -707,6 +710,16 @@ return (
               Export
             </button>
 
+          {activeProject && activeProject.chapters && activeProject.chapters.length > 0 && (
+            <button
+              onClick={() => setShowPublishDialog(true)}
+              className="flex items-center space-x-2 px-3 py-1.5 rounded text-sm bg-green-600 hover:bg-green-700"
+            >
+              <ArrowUpFromLine size={16}/>
+              <span>Publish</span>
+            </button>
+          )}
+
             {activeChapter && (
               <div className="hidden md:flex items-center space-x-2 ml-4">
                 <button 
@@ -1021,6 +1034,21 @@ return (
         projectTitle={projectToDelete?.title || ''}
         isDeleting={isDeletingProject}
       />
+
+      {showPublishDialog && activeProject && (
+        <PublishDialog
+        isOpen={showPublishDialog}
+        onClose={() => setShowPublishDialog(false)}
+        projectId={activeProject.id}
+        projectTitle={activeProject.title}
+        wordCount={totalProjectWords}
+        onSuccess={() => {
+        // This would typically refetch projects or update the UI
+        // You could also show a success message
+        alert('Your work has been successfully published!');
+      }}
+      />
+    )}
     </div>
   );
 }
