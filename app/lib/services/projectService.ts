@@ -1,7 +1,10 @@
 import { sql } from '@/app/lib/database';
 import { Project, ProjectsWithSubscription } from '@/app/lib/definitions';
+import { measurePerformance } from '@/app/lib/monitoring';
 
 export async function getProjectsByUserId(userId: string): Promise<ProjectsWithSubscription> {
+
+  return await measurePerformance(`getProjectByUserId(${userId})`, async () => {
   // Get user's subscription info
   const userInfo = await sql`
     SELECT 
@@ -69,6 +72,7 @@ export async function getProjectsByUserId(userId: string): Promise<ProjectsWithS
       current_project_count: projectsResult.length
     }
   };
+});
 }
 
 export async function createNewProject(

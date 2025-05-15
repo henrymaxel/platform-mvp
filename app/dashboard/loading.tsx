@@ -1,4 +1,4 @@
-export default function LoadingDashbaord() {
+export default function LoadingDashboard() {
         return (
       <div className="flex items-center justify-center min-h-full">
         <div className="text-center">

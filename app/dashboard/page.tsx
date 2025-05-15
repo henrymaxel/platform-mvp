@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Edit, BookOpen } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import LoadingDashbaord from './loading';
+import LoadingDashboard from './loading';
 
 export default function Dashboard() {
   const [greeting, setGreeting] = useState('');
@@ -27,7 +27,7 @@ export default function Dashboard() {
 
   // Loading state
   if (isLoading) {
-    <LoadingDashbaord />
+    <LoadingDashboard />
   }
 
   return (

@@ -1,3 +1,5 @@
+import { sql } from "./database";
+
 export async function logAuditEvent(
   userId: string, 
   action: string, 
