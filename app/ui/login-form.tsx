@@ -1,21 +1,29 @@
 'use client';
 
 import { Mail, Lock, User } from 'lucide-react';
-import { authenticate } from '@/app/lib/actions/actions';
-import { useActionState, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { authenticate, registerUser } from '@/app/lib/actions/auth';
+import { useActionState, useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+
 
 export default function LoginForm() {
     const [activeTab, setActiveTab] = useState('login');
     const [termsAgreed, setTermsAgreed] = useState(false);
-
+    const router = useRouter();
+    
     const searchParams = useSearchParams();
     const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
     
-    const [errorMessage, formAction, isPending] = useActionState(
+    // Login action state
+    const [loginErrorMessage, loginFormAction, isLoginPending] = useActionState(
       authenticate,
       undefined,
-    )
+    );
+    
+    const [registerErrorMessage, registerFormAction, isRegisterPending] = useActionState(
+      registerUser,
+      undefined,
+    );
 
     return (
         <div className='bg-gray-900 rounded-lg p-6'>
@@ -38,15 +46,24 @@ export default function LoginForm() {
             Sign Up
           </button>
         </div>
-        {errorMessage && (
+        
+        {/* Login Error Message */}
+        {activeTab === 'login' && loginErrorMessage && (
           <div className="bg-myred-500 text-white p-3 rounded-md mb-4">
-            {errorMessage}
+            {loginErrorMessage}
+          </div>
+        )}
+        
+        {/* Register Error Message */}
+        {activeTab === 'signup' && registerErrorMessage && (
+          <div className="bg-myred-500 text-white p-3 rounded-md mb-4">
+            {registerErrorMessage}
           </div>
         )}
         
         {/* Login Form */}
         {activeTab === 'login' && (
-          <form action={formAction} className="space-y-4">
+          <form action={loginFormAction} className="space-y-4">
             <div>
               <label className='block mb-2 font-medium text-gray-300' htmlFor="email">
                 Email
@@ -102,20 +119,20 @@ export default function LoginForm() {
             <button
               type="submit"
               className="w-full py-2.5 px-5 text-white bg-myred-600 rounded-lg hover:bg-myred-700 focus:ring-4 focus:ring-myred-300 font-medium"
-              disabled={isPending}
+              disabled={isLoginPending}
             >
-              {isPending ? 'Logging in...' : 'Log in'}
+              {isLoginPending ? 'Logging in...' : 'Log in'}
             </button>
           </form>
         )}
         
         {/* Signup Form */}
         {activeTab === 'signup' && (
-          <form action={formAction} className="space-y-4">
+          <form action={registerFormAction} className="space-y-4">
             {/* First Name and Last Name fields side by side */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className='block mb-2 font-medium text-gray-300' htmlFor="first-name">
+                <label className='block mb-2 font-medium text-gray-300' htmlFor="firstName">
                   First Name
                 </label>
                 <div className="relative">
@@ -124,7 +141,7 @@ export default function LoginForm() {
                   </div>
                   <input
                     type="text"
-                    id="first-name"
+                    id="firstName"
                     name="firstName" 
                     className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-myred-500 focus:border-myred-500 border'
                     placeholder="John"
@@ -133,7 +150,7 @@ export default function LoginForm() {
                 </div>
               </div>
               <div>
-                <label className='block mb-2 font-medium text-gray-300' htmlFor="last-name">
+                <label className='block mb-2 font-medium text-gray-300' htmlFor="lastName">
                   Last Name
                 </label>
                 <div className="relative">
@@ -142,7 +159,7 @@ export default function LoginForm() {
                   </div>
                   <input
                     type="text"
-                    id="last-name"
+                    id="lastName"
                     name="lastName"
                     className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-myred-500 focus:border-myred-500 border'
                     placeholder="Doe"
@@ -152,7 +169,7 @@ export default function LoginForm() {
               </div>
             </div>
             <div>
-              <label className='block mb-2 font-medium text-gray-300' htmlFor="signup-email">
+              <label className='block mb-2 font-medium text-gray-300' htmlFor="email">
                 Email
               </label>
               <div className="relative">
@@ -161,7 +178,7 @@ export default function LoginForm() {
                 </div>
                 <input
                   type="email"
-                  id="signup-email"
+                  id="email"
                   name="email"
                   className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-myred-500 focus:border-myred-500 border'
                   placeholder="name@example.com"
@@ -170,7 +187,7 @@ export default function LoginForm() {
               </div>
             </div>
             <div>
-              <label className='block mb-2 font-medium text-gray-300' htmlFor="signup-password">
+              <label className='block mb-2 font-medium text-gray-300' htmlFor="password">
                 Password
               </label>
               <div className="relative">
@@ -179,13 +196,16 @@ export default function LoginForm() {
                 </div>
                 <input
                   type="password"
-                  id="signup-password"
+                  id="password"
                   name="password" 
                   className='pl-10 w-full p-2.5 rounded-lg bg-gray-800 border-gray-700 text-white focus:ring-myred-500 focus:border-myred-500 border'
                   placeholder="••••••••"
                   required
                 />
               </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Password must be at least 8 characters and include uppercase, lowercase, number, and special character.
+              </p>
             </div>
             <div className="flex items-start mb-4">
               <div className="flex items-center h-5">
@@ -194,9 +214,10 @@ export default function LoginForm() {
                   type="checkbox"
                   value="accepted"
                   name="terms"
-                  {...(termsAgreed ? { checked: true } : {})}
-                  className="w-4 h-4 border rounded focus:ring-3 focus:ring-myred-300 bg-gray-700 border-gray-600"
+                  checked={termsAgreed}
                   onChange={(e) => setTermsAgreed(e.target.checked)}
+                  className="w-4 h-4 border rounded focus:ring-3 focus:ring-myred-300 bg-gray-700 border-gray-600"
+                  required
                 />
               </div>
               <label htmlFor="terms" className='ml-2 text-sm text-gray-300'>
@@ -218,9 +239,9 @@ export default function LoginForm() {
                   ? 'bg-myred-600 hover:bg-myred-700 focus:ring-4 focus:ring-myred-300' 
                   : 'bg-gray-400 cursor-not-allowed'
               }`}
-              disabled={!termsAgreed || isPending}
+              disabled={!termsAgreed || isRegisterPending}
             >
-              {isPending ? 'Creating account...' : 'Create an account'}
+              {isRegisterPending ? 'Creating account...' : 'Create an account'}
             </button>
           </form>
         )}

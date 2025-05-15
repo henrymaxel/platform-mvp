@@ -8,6 +8,7 @@ import { signOut, useSession } from 'next-auth/react';
 import SideNav from '@/app/ui/dashboard/sidenav';
 import MobileNav from '@/app/ui/dashboard/mobilenav';
 import Link from 'next/link';
+import LoadingDashboard from './loading';
 
 export default function DashboardLayout({
   children,
@@ -17,9 +18,9 @@ export default function DashboardLayout({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { data: session, status } = useSession();
 
-  // if (status === 'loading') {
-  //   return <div>Loading...</div>
-  // }
+  if (status === 'loading') {
+    return <LoadingDashboard />
+  }
   const userImage = session?.user?.profile_picture_url || '/fallback_avatar.png';
   const userName = session?.user?.first_name || 'Demo';
 

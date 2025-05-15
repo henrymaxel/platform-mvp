@@ -17,8 +17,25 @@ export type User = {
   subscription_tier_id: number | null;
   terms_accepted: boolean;
   terms_accepted_at: Date | null;
+  public_profile: boolean;
+  show_email: boolean;
+  show_social: boolean;
+  username: string | null;
   created_at: Date;
   updated_at: Date;
+}
+
+export type UserProfile = {
+  first_name?: string;
+  last_name?: string;
+  author_bio?: string | null;
+  profile_picture_url?: string | null;
+  twitter_link?: string | null;
+  instagram_link?: string | null;
+  tiktok_link?: string | null;
+  public_profile?: boolean;
+  show_email?: boolean;
+  show_social?: boolean;
 }
 
 export type AuthUser = {
@@ -76,4 +93,36 @@ export type ProjectsWithSubscription = {
     max_project_count: number;
     current_project_count: number;
   };
+};
+
+export type Publication = {
+  id: string;
+  project_id: string;
+  title: string;
+  publisher?: string;
+  status: string; // 'pending', 'published', 'rejected'
+  isbn?: string;
+  metadata_cid?: string;
+  cover_cid?: string; 
+  first_edition_timestamp?: string;
+  version?: string;
+  rejection_reason?: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  views_count?: number;
+  unique_readers_count?: number;
+  completion_rate?: number;
+};
+
+export type LibraryMetadata = {
+  id: string;
+  publication_id: string;
+  genre: string;
+  tags: string[]; // Stored as JSON in DB
+  keywords: string;
+  language: string;
+  reading_time_estimate: number;
+  created_at: string;
+  updated_at: string;
 };

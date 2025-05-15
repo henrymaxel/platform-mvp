@@ -5,13 +5,11 @@ import Credentials from 'next-auth/providers/credentials';
 import { sql } from '@/app/lib/database';
 import bcrypt from 'bcryptjs';
 import type { User } from '@/app/lib/definitions';
+import { getUserByEmail } from '@/app/lib/services/userService';
 
 async function getUser(email: string): Promise<User | null> {
   try {
-    const [user] = await sql<User[]>`
-      SELECT * FROM users WHERE email = ${email}
-    `;
-    return user || null;
+    return await getUserByEmail(email);
   } catch (error) {
     console.error('Failed to fetch user:', error);
     return null;
