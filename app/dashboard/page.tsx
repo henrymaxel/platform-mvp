@@ -45,7 +45,7 @@ export default function Dashboard() {
       <div className="flex justify-center items-center min-h-[60vh]">
         <div className="grid grid-cols-1 gap-6 text-center w-full max-w-4xl px-4">
           <div className="flex justify-center">
-            <Link href="/dashboard/profile" className="bg-gray-800 rounded-lg p-6 shadow-lg hover:bg-gray-700 transition-all w-full max-w-sm">
+            <Link href="/dashboard/settings/profile" className="bg-gray-800 rounded-lg p-6 shadow-lg hover:bg-gray-700 transition-all w-full max-w-sm">
               <div className="flex flex-col items-center">
                 <div className="p-4 bg-blue-500 rounded-full mb-4">
                   <User size={32} className="text-white" />
