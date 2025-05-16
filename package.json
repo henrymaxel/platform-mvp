@@ -13,10 +13,13 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@metamask/eth-sig-util": "^8.2.0",
     "@next/env": "^15.3.2",
+    "alchemy-sdk": "^3.5.9",
     "autoprefixer": "^10.4.21",
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
+    "ethereumjs-util": "^7.1.5",
     "heroicons": "^2.2.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.508.0",
