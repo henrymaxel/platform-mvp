@@ -19,7 +19,7 @@ export default function Footer() {
                             Write with AI. Publish on-chain. Own it.
                         </p>
                         <div className="flex space-x-5">
-                            <Link href="https://x.com/aboringplatform" className="text-gray-400 hover:text-myred-500 transition-colors" aria-label="Twitter">
+                            <Link href="https://x.com/boring_platform" className="text-gray-400 hover:text-myred-500 transition-colors" aria-label="Twitter" target="_blank">
                                 <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors">
                                     <XIcon />
                                 </div>
