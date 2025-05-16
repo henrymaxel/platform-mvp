@@ -4,6 +4,7 @@
 import { auth } from '@/auth';
 import { getUserStats, getUserActivities } from '@/app/lib/services/dashboardService';
 import { UnauthorizedError } from '@/app/lib/errors';
+import { getUserById } from '../services/userService';
 
 /**
  * Get dashboard data for the current user
@@ -30,6 +31,22 @@ export async function getDashboardData(limit: number = 5) {
     };
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error);
+    throw error;
+  }
+}
+
+export async function getCurrentUser() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  try {
+    const user = await getUserById(session.user.id);
+    return user;
+  } catch (error) {
+    console.error('Failed to fetch current user:', error);
     throw error;
   }
 }

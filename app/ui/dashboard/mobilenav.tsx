@@ -44,7 +44,7 @@ export default function MobileNav() {
           {/* Navigation Panel */}
           <div className="fixed left-0 top-0 bottom-0 w-64 bg-gray-800 p-4 flex flex-col">
             <div className="flex items-center justify-between mb-8">
-              <h1 className="text-2xl font-bold text-myred-500">Company A</h1>
+              <h1 className="text-2xl font-bold text-myred-500">The Boring Platform</h1>
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 rounded-md hover:bg-gray-700 transition-colors"

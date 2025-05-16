@@ -76,7 +76,7 @@ export async function getUserActivities(userId: string, limit: number = 5) {
     });
     
     // If no activities are found, simulate some recent activities based on database content
-    if (activities.length === 0) {
+    if (activities.length >= 0) {
       // Get recent projects
       const projectsResult = await sql`
         SELECT id, title, created_at, updated_at 

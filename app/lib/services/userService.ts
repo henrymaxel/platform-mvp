@@ -83,7 +83,7 @@ export async function createUser(userData: {
 /**
  * Update user details
  */
-export async function updateUserProfile(userId: string, data: Partial<UserProfile>): Promise<User> {
+export async function updateUserProfile(userId: string, data: Partial<User>): Promise<User> {
   try {
     console.log(`Updating profile for user ${userId} with data:`, data);
     
@@ -102,6 +102,7 @@ export async function updateUserProfile(userId: string, data: Partial<UserProfil
       SET 
         first_name = ${data.first_name ?? existingUser.first_name},
         last_name = ${data.last_name ?? existingUser.last_name},
+        username = ${data.username ?? existingUser.username},
         author_bio = ${data.author_bio ?? existingUser.author_bio},
         twitter_link = ${data.twitter_link ?? existingUser.twitter_link},
         instagram_link = ${data.instagram_link ?? existingUser.instagram_link},
@@ -167,6 +168,39 @@ export async function changePassword(
     return true;
   } catch (error) {
     console.error('Failed to change password:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if username is available
+ */
+export async function isUsernameAvailable(username: string, currentUserId?: string): Promise<boolean> {
+  // Skip empty usernames
+  if (!username || username.trim() === '') {
+    return true;
+  }
+
+  try {
+    // Check if username exists and belongs to a different user
+    const [existingUser] = await sql<{ id: string }[]>`
+      SELECT id FROM users WHERE username = ${username.trim()}
+    `;
+    
+    // If no user found with this username, it's available
+    if (!existingUser) {
+      return true;
+    }
+    
+    // If the user found is the current user, the username is still available for them
+    if (currentUserId && existingUser.id === currentUserId) {
+      return true;
+    }
+    
+    // Username exists and belongs to someone else
+    return false;
+  } catch (error) {
+    console.error('Error checking username availability:', error);
     throw error;
   }
 }

@@ -122,6 +122,7 @@ export async function deleteProjectById(userId: string, projectId: string): Prom
   // Delete all related data in a transaction
   await sql.begin(async sql => {
     // Delete cascade through the project relationships
+    await sql`DELETE FROM content_references WHERE project_id = ${projectId}`;
     await sql`DELETE FROM projects WHERE id = ${projectId}`;
   });
 

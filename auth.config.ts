@@ -41,6 +41,7 @@ export const authConfig: NextAuthConfig = {
         token.id = user.id;
         token.first_name = user.first_name || '';
         token.last_name = user.last_name || '';
+        token.username = user.username || `${user.first_name}_${user.last_name}`;
         token.email = user.email || '';
         token.role = user.role || '';
         token.profile_picture_url = user.profile_picture_url || '/fallback_avatar.png';
@@ -51,7 +52,7 @@ export const authConfig: NextAuthConfig = {
     async session({ session, token }) {
       // console.log("HERE SESSIONS");
         session.user.id = token.id as string;
-        session.user.name = `${token.first_name} ${token.last_name}` as string;
+        session.user.username = token.username as string;
         session.user.first_name = token.first_name as string;
         session.user.last_name = token.last_name as string;
         session.user.role = token.role as string;
@@ -83,6 +84,7 @@ export const authConfig: NextAuthConfig = {
           email: user.email,
           first_name: user.first_name,
           last_name: user.last_name,
+          username: user.username,
           role: user.role,
           profile_picture_url: user.profile_picture_url,
         };

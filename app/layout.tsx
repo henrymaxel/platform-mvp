@@ -16,10 +16,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.className} antialiased`}
+        className={`${inter.className} antialiased h-screen overflow-hidden m-0 p-0`}
       >
         <Providers>
-        {children}
+          {children}
         </Providers>
 
       </body>
