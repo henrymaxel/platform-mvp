@@ -5,8 +5,9 @@ import { User, Edit, BookOpen, Settings, CreditCard, Bell, ExternalLink } from '
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter, usePathname } from 'next/navigation';
 import LoadingDashboard from './loading';
-import { getDashboardData } from '@/app/lib/actions/dashboard';
+import { getDashboardData, getCurrentUser } from '@/app/lib/actions/dashboard';
 
 // Define types
 interface UserStats {
@@ -33,8 +34,12 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [prevPath, setPrevPath] = useState('');
 
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -47,7 +52,16 @@ export default function Dashboard() {
 
     // Fetch dashboard data when session is available
     fetchDashboardData();
+    fetchCurrentUser();
   }, [status, session]);
+
+  useEffect(() => {
+    if (prevPath.includes('/dashboard/settings/profile') && pathname === '/dashboard') {
+      fetchCurrentUser();
+    }
+
+    setPrevPath(pathname);
+  }, [pathname]);
 
   const fetchDashboardData = async () => {
     try {
@@ -60,6 +74,19 @@ export default function Dashboard() {
       setError('Failed to load dashboard data');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      if (session?.user?.id) {
+        const userData = await getCurrentUser();
+        if (userData) {
+          setCurrentUser(userData);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch current user data:', error);
     }
   };
 
@@ -82,7 +109,7 @@ export default function Dashboard() {
     return <LoadingDashboard />;
   }
 
-  const userName = session?.user?.first_name || 'Demo';
+  const userName = currentUser?.username || session?.user?.username || 'Demo';
   const userImage = session?.user?.profile_picture_url || '/fallback_avatar.png';
   const userFullName = `${session?.user?.first_name || ''} ${session?.user?.last_name || ''}`.trim() || 'Demo User';
 
@@ -137,7 +164,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <h3 className="text-lg font-semibold">{userFullName}</h3>
-              <p className="text-gray-400 text-sm mb-4">@{userName.toLowerCase()}</p>
+              <p className="text-gray-400 text-sm mb-4">@{userName}</p>
 
 
 
@@ -150,7 +177,7 @@ export default function Dashboard() {
                   Edit Profile
                 </Link>
                 <Link
-                  href={`/user/${userName.toLowerCase()}`}
+                  href={`/dashboard/user/${userName.toLowerCase()}`}
                   className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-full text-sm flex items-center"
                   target="_blank"
                 >

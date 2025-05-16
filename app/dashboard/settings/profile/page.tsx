@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { getUserProfile, updateProfile } from '@/app/lib/actions/profile';
+import { getUserProfile, updateProfile, checkUsernameAvailability } from '@/app/lib/actions/profile';
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import LoadingDashboard from '../../loading';
@@ -15,11 +15,18 @@ export default function ProfileSettingsPage() {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
+    username: '',
     author_bio: '',
     twitter_link: '',
     instagram_link: '',
     tiktok_link: '',
+    public_profile: false,
+    show_email: false,
+    show_social: false,
   });
+
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -33,10 +40,14 @@ export default function ProfileSettingsPage() {
         setFormData({
           first_name: userData.first_name || '',
           last_name: userData.last_name || '',
+          username: userData.username || '',
           author_bio: userData.author_bio || '',
           twitter_link: userData.twitter_link || '',
           instagram_link: userData.instagram_link || '',
           tiktok_link: userData.tiktok_link || '',
+          public_profile: !!userData.public_profile,
+          show_email: !!userData.show_email,
+          show_social: !!userData.show_social,
         });
       } catch (error) {
         console.error('Failed to load profile:', error);
@@ -51,6 +62,38 @@ export default function ProfileSettingsPage() {
     }
   }, [status]);
 
+  useEffect(() => {
+    if (!formData.username || formData.username === profile?.username) {
+      setUsernameError(null);
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      setUsernameError('Username can only contain letters, numbers, and _');
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setCheckingUsername(true);
+
+        const result = await checkUsernameAvailability(formData.username);
+
+        if (!result.available) {
+          setUsernameError('This username is already taken');
+        } else {
+          setUsernameError(null);
+        }
+      } catch (error) {
+        console.log('Error checking username: ', error);
+      } finally {
+        setCheckingUsername(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.username, profile?.username]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -62,13 +105,18 @@ export default function ProfileSettingsPage() {
       setSaving(true);
       setError(null);
       setSuccess(null);
-      
+
+      if (usernameError) {
+        setError('Please fix the username error before saving');
+        return;
+      }
+
       // Create FormData object
       const submitData = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
         submitData.append(key, value);
       });
-      
+
       const fileInput = document.getElementById('profile_picture') as HTMLInputElement;
       if (fileInput?.files?.[0]) {
         submitData.append('profile_picture', fileInput.files[0]);
@@ -83,7 +131,7 @@ export default function ProfileSettingsPage() {
         ...prev,
         ...formData
       }));
-      
+
       setSuccess('Profile updated successfully');
     } catch (error) {
       console.error('Failed to update profile:', error);
@@ -93,9 +141,9 @@ export default function ProfileSettingsPage() {
     }
   };
 
-
   if (status === 'loading' || loading) {
-    return <LoadingDashboard />;
+    return
+    <LoadingDashboard />;
   }
 
   if (!session) {
@@ -111,69 +159,87 @@ export default function ProfileSettingsPage() {
           </Link>
           <h1 className="text-2xl font-bold">Profile Settings</h1>
         </div>
-        
+
         {error && (
           <div className="bg-myred-500 text-white p-4 rounded mb-6">
             {error}
           </div>
         )}
-        
+
         {success && (
           <div className="bg-green-600 text-white p-4 rounded mb-6">
             {success}
           </div>
         )}
-        
+
         <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2" htmlFor="profile_picture">
+                Profile Picture
+              </label>
+              <input type="file" id="profile_picture" name="profile_picture" accept="image/*"
+                className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none" />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2" htmlFor="first_name">
                   First Name
                 </label>
-                <input
-                  type="text"
-                  id="first_name"
-                  name="first_name"
-                  value={formData.first_name}
-                  onChange={handleInputChange}
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none"
-                />
+                <input type="text" id="first_name" name="first_name" value={formData.first_name}
+                  onChange={handleInputChange} className="w-full p-2 bg-gray-400 border border-gray-600 rounded"
+                  disabled />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-2" htmlFor="last_name">
                   Last Name
                 </label>
-                <input
-                  type="text"
-                  id="last_name"
-                  name="last_name"
-                  value={formData.last_name}
-                  onChange={handleInputChange}
-                  className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none"
-                />
+                <input type="text" id="last_name" name="last_name" value={formData.last_name}
+                  onChange={handleInputChange} className="w-full p-2 bg-gray-400 border border-gray-600 rounded"
+                  disabled />
               </div>
             </div>
-            
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2" htmlFor="username">
+                Username
+              </label>
+              <div className="relative">
+                <input type="text" id="username" name="username" value={formData.username}
+                  onChange={handleInputChange} className={`w-full p-2 bg-gray-700 border ${usernameError
+                    ? 'border-myred-500' : 'border-gray-600'} rounded focus:outline-none focus:border-myred-500`}
+                  placeholder="yourusername" />
+                {checkingUsername && (
+                  <div className="absolute right-3 top-2">
+                    <div className="animate-spin h-5 w-5 border-2 border-gray-300 border-t-myred-500 rounded-full">
+                    </div>
+                  </div>
+                )}
+              </div>
+              {usernameError ? (
+                <p className="text-myred-500 text-sm mt-1">{usernameError}</p>
+              ) : (
+                <p className="text-gray-400 text-sm mt-1">
+                  Your username appears in your profile URL.
+                </p>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-2" htmlFor="author_bio">
                 Author Bio
               </label>
-              <textarea
-                id="author_bio"
-                name="author_bio"
-                value={formData.author_bio}
-                onChange={handleInputChange}
+              <textarea id="author_bio" name="author_bio" value={formData.author_bio} onChange={handleInputChange}
                 rows={4}
                 className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none"
-                placeholder="Tell readers about yourself..."
-              />
+                placeholder="Tell readers about yourself..." />
               <p className="text-gray-400 text-sm mt-1">
                 Your bio appears on your public profile and published works.
               </p>
             </div>
-            
+
             <div>
               <h3 className="text-lg font-semibold mb-3">Social Media Links</h3>
               <div className="space-y-4">
@@ -181,133 +247,95 @@ export default function ProfileSettingsPage() {
                   <label className="block text-sm font-medium mb-2" htmlFor="twitter_link">
                     Twitter URL
                   </label>
-                  <input
-                    type="text"
-                    id="twitter_link"
-                    name="twitter_link"
-                    value={formData.twitter_link}
-                    onChange={handleInputChange}
-                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none"
-                    placeholder="https://twitter.com/yourusername"
-                  />
+                  <input type="text" id="twitter_link" name="twitter_link" value={formData.twitter_link} onChange={handleInputChange} className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none" placeholder="https://twitter.com/yourusername" />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-2" htmlFor="instagram_link">
                     Instagram URL
                   </label>
-                  <input
-                    type="text"
-                    id="instagram_link"
-                    name="instagram_link"
-                    value={formData.instagram_link}
-                    onChange={handleInputChange}
-                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none"
-                    placeholder="https://instagram.com/yourusername"
-                  />
+                  <input type="text" id="instagram_link" name="instagram_link" value={formData.instagram_link} onChange={handleInputChange} className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none" placeholder="https://instagram.com/yourusername" />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-2" htmlFor="tiktok_link">
                     TikTok URL
                   </label>
-                  <input
-                    type="text"
-                    id="tiktok_link"
-                    name="tiktok_link"
-                    value={formData.tiktok_link}
-                    onChange={handleInputChange}
-                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none"
-                    placeholder="https://tiktok.com/@yourusername"
-                  />
+                  <input type="text" id="tiktok_link" name="tiktok_link" value={formData.tiktok_link} onChange={handleInputChange} className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none" placeholder="https://tiktok.com/@yourusername" />
                 </div>
               </div>
             </div>
 
             <div>
-            <h3 className="text-lg font-semibold mb-3">Privacy Settings</h3>
-            <div className="bg-gray-700 p-4 rounded mb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">Public Profile</h4>
-                  <p className="text-sm text-gray-400">
-                    Make your profile visible to other users
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="public_profile"
-                    className="sr-only peer"
-                    checked={formData.public_profile || false}
-                    onChange={(e) => setFormData(prev => ({
+              <h3 className="text-lg font-semibold mb-3">Privacy Settings</h3>
+              <div className="bg-gray-700 p-4 rounded mb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Public Profile</h4>
+                    <p className="text-sm text-gray-400">
+                      Make your profile visible to other users
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="public_profile" className="sr-only peer" checked={formData.public_profile || false} onChange={(e) => setFormData(prev => ({
                       ...prev,
                       public_profile: e.target.checked
                     }))}
-                  />
-                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-myred-500"></div>
-                </label>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">Show Email</h4>
-                  <p className="text-sm text-gray-400">
-                    Allow others to see your email address
-                  </p>
+                    />
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-myred-500"></div>
+                  </label>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="show_email"
-                    className="sr-only peer"
-                    checked={formData.show_email || false}
-                    onChange={(e) => setFormData(prev => ({
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Show Email</h4>
+                    <p className="text-sm text-gray-400">
+                      Allow others to see your email address
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="show_email" className="sr-only peer" checked={formData.show_email || false} onChange={(e) => setFormData(prev => ({
                       ...prev,
                       show_email: e.target.checked
                     }))}
-                  />
-                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-myred-500"></div>
-                </label>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">Show Social Links</h4>
-                  <p className="text-sm text-gray-400">
-                    Display your social media links on your profile
-                  </p>
+                    />
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-myred-500"></div>
+                  </label>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="show_social"
-                    className="sr-only peer"
-                    checked={formData.show_social || false}
-                    onChange={(e) => setFormData(prev => ({
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Show Social Links</h4>
+                    <p className="text-sm text-gray-400">
+                      Display your social media links on your profile
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="show_social" className="sr-only peer" checked={formData.show_social || false} onChange={(e) => setFormData(prev => ({
                       ...prev,
                       show_social: e.target.checked
                     }))}
-                  />
-                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-myred-500"></div>
-                </label>
+                    />
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-myred-500"></div>
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
             <div className="pt-4">
               <button
                 type="submit"
-                disabled={saving}
-                className="px-6 py-2 bg-myred-600 hover:bg-myred-700 rounded flex items-center disabled:opacity-50"
-              >
+                disabled={saving || !!usernameError}
+                className="px-6 py-2 bg-myred-600 hover:bg-myred-700 rounded flex items-center disabled:opacity-50">
                 {saving ? (
+
                   <>
                     <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
                     Saving...
                   </>
                 ) : (
+
                   <>
                     <Save size={16} className="mr-2" />
                     Save Changes

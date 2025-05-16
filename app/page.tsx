@@ -9,9 +9,8 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-gray-700 text-white">
       <main className="flex-grow">
         <Hero />
-
-        <Footer />
       </main>
+      <Footer />
     </div>
   );
 }
