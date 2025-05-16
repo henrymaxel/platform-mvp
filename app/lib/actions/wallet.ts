@@ -265,20 +265,20 @@ async function verifyNFTsForWallet(
   walletId: string
 ) {
   try {
-    // Always filter by the MAYC contract address
-    const contractAddresses = [MAYC_CONTRACT_ADDRESS];
+    console.log(`Checking for NFTs for wallet ${walletAddress}`);
     
-    console.log(`Checking for MAYC NFTs for wallet ${walletAddress}`);
+    // Remove the MAYC-specific filter to allow any NFT collection
+    // const contractAddresses = [MAYC_CONTRACT_ADDRESS];
     
-    // Use the Alchemy SDK to get NFTs
+    // Use the Alchemy SDK to get all NFTs
     const response = await getNftsForOwner(
       walletAddress.toLowerCase(), 
       chainId,
-      contractAddresses
+      // contractAddresses  /* Remove this parameter to get all NFTs */
     );
     
     const nfts = response.ownedNfts || [];
-    console.log(`Found ${nfts.length} MAYC NFTs for wallet ${walletAddress}`);
+    console.log(`Found ${nfts.length} NFTs for wallet ${walletAddress}`);
     
     // Process each NFT
     for (const nft of nfts) {
@@ -312,7 +312,7 @@ async function verifyNFTsForWallet(
             created_at,
             updated_at
           ) VALUES (
-            ${contractMetadata.name || nft.contract.name || 'Mutant Ape Yacht Club'},
+            ${contractMetadata.name || nft.contract.name || 'Unknown Collection'},
             ${contractAddress},
             ${chainId},
             ${nft.tokenType || 'ERC721'},

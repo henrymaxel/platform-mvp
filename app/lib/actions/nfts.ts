@@ -622,7 +622,7 @@ export async function getProjectCharacters(projectId: string) {
     try {
         const assetResult = await sql`
             SELECT 
-                a.id as assset_id
+                a.id as asset_id
             FROM project_assets pa
             JOIN assets a ON pa.asset_id = a.id
             JOIN projects p ON pa.project_id = p.id
@@ -641,7 +641,7 @@ export async function getProjectCharacters(projectId: string) {
                 ncp.asset_id,
                 ncp.character_name,
                 ncp.character_description,
-                ncp.personality_tratis,
+                ncp.personality_traits,  /* Fixed typo here */
                 ncp.backstory,
                 ncp.role_in_story,
                 ncp.visual_appearance,
@@ -655,8 +655,8 @@ export async function getProjectCharacters(projectId: string) {
             JOIN user_nfts un ON a.user_nft_id = un.id
             JOIN nft_collections nc ON un.collection_id = nc.id
             WHERE ncp.asset_id IN ${sql(assetIds)}
-            AND ncp.user_id = ${session?.user?.id} 
-        `; // ncp.user_id = ${session?.user?.id} will end up being problematic if an asset is sold and used by someone else
+            AND ncp.user_id = ${session.user.id}
+        `;
 
         const processedCharacters = characterResult.map((character: any) => {
             const metadata = character.token_metadata || {};
@@ -667,8 +667,10 @@ export async function getProjectCharacters(projectId: string) {
                 image_url: imageUrl
             };
         });
+        
+        return processedCharacters;  /* Add return statement here */
     } catch (error) {
         console.error('Failed to fetch project characters: ', error);
+        throw error;  /* Rethrow error for proper handling */
     }
-
 }

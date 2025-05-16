@@ -7,6 +7,10 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { connectWallet, getConnectedWallets, disconnectWallet } from '@/app/lib/actions/wallet';
 import LoadingDashboard from '../../../loading';
+import {
+    isMetaMaskInstalled,
+    createWalletSignature
+} from '@/app/lib/ethereum';
 
 // Define the necessary interfaces
 interface ConnectedWallet {
@@ -61,33 +65,18 @@ export default function ConnectWalletPage() {
             setSuccess(null);
 
             // Check if MetaMask is installed
-            if (typeof window.ethereum === 'undefined') {
+            if (!isMetaMaskInstalled()) {
                 setError('MetaMask is not installed. Please install MetaMask to connect your wallet.');
                 return;
             }
 
-            // Request account access
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            const address = accounts[0];
-            const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-
-            // Convert hex chainId to decimal
-            const chainIdDecimal = parseInt(chainId, 16);
-
-            // Generate a message to sign
-            const timestamp = Date.now();
-            const message = `Verify wallet ownership for The Boring Platform: ${timestamp}`;
-
-            // Sign the message
-            const signature = await window.ethereum.request({
-                method: 'personal_sign',
-                params: [message, address],
-            });
+            // Use the helper function to create a wallet signature
+            const { address, chainId, message, signature, timestamp } = await createWalletSignature();
 
             // Send to server for verification and storage
             const result = await connectWallet({
                 address,
-                chainId: chainIdDecimal,
+                chainId,
                 walletType: 'metamask',
                 message,
                 signature,

@@ -23,7 +23,8 @@ export async function getAlchemyInstance(chainId: number): Alchemy {
     throw new Error('ALCHEMY_API_KEY environment variable is not set');
   }
   
-  const network = CHAIN_ID_TO_NETWORK[chainId] || Network.ETH_MAINNET;
+  // const network = CHAIN_ID_TO_NETWORK[chainId] || Network.ETH_MAINNET;
+  const network = Network.ETH_MAINNET;
   
   const settings = {
     apiKey,
@@ -44,7 +45,10 @@ export async function getNftsForOwner(
 ) {
   try {
     const alchemy = getAlchemyInstance(chainId);
-    
+    console.log("**********************************************");
+    // console.log(alchemy.nft.verifyNftOwnership('0x7be41b2c084cb009d7c76130c2c3baa2cfe4be83', '0x354634c4621cdfb7a25e6486cca1e019777d841b'));
+    console.log(alchemy.config.url);
+    console.log("**********************************************");
     // Define options
     const options: any = {
       excludeFilters: ["SPAM"],
