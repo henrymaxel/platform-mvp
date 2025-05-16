@@ -2,14 +2,16 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  User, 
-  CreditCard, 
-  Bell, 
-  Lock, 
-  Shield, 
+import {
+  User,
+  CreditCard,
+  Bell,
+  Lock,
+  Shield,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  Diamond,
+  Wallet
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -21,35 +23,49 @@ export default function SettingsPage() {
       description: 'Update your personal information',
       icon: User,
       href: '/dashboard/settings/profile',
-      color: 'text-blue-500',
+      color: 'text-myred-500',
     },
     {
       title: 'Subscription',
       description: 'Manage your subscription plan',
       icon: CreditCard,
       href: '/dashboard/settings/subscriptions',
-      color: 'text-green-500',
+      color: 'text-myred-500',
     },
     {
       title: 'Account Security',
       description: 'Update password and security settings',
       icon: Shield,
       href: '/dashboard/settings/security',
-      color: 'text-purple-500',
+      color: 'text-myred-500',
     },
     {
       title: 'Notification Preferences',
       description: 'Control how you receive notifications',
       icon: Bell,
       href: '/dashboard/settings/notifications',
-      color: 'text-yellow-500',
+      color: 'text-myred-500',
     },
     {
       title: 'My Publications',
       description: 'Manage your published content',
       icon: BookOpen,
       href: '/dashboard/settings/publications',
-      color: 'text-orange-500',
+      color: 'text-myred-500',
+    },
+    {
+      title: 'Asset Manager',
+      description: 'Manage your verified NFTs and create character profiles',
+      icon: Diamond,
+      href: '/dashboard/settings/assets/',
+      color: 'text-myred-500',
+    },
+    {
+      title: 'Wallet Connect',
+      description: 'Connect your wallets to verify your asset ownership',
+      icon: Wallet,
+      href: '/dashboard/settings/wallet/connect',
+      color: 'text-myred-500',
     },
   ];
 
@@ -57,12 +73,12 @@ export default function SettingsPage() {
     <div className="p-4 md:p-6 h-full overflow-y-auto">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold mb-6">Settings</h1>
-        
+
         <div className="grid grid-cols-1 gap-4">
           {settingsOptions.map((option, index) => {
             const IconComponent = option.icon;
             return (
-              <div 
+              <div
                 key={index}
                 onClick={() => router.push(option.href)}
                 className="bg-gray-800 rounded-lg p-4 shadow-lg flex items-center cursor-pointer hover:bg-gray-700 transition-colors"

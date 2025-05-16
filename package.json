@@ -13,10 +13,13 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@metamask/eth-sig-util": "^8.2.0",
     "@next/env": "^15.3.2",
+    "alchemy-sdk": "^3.5.8",
     "autoprefixer": "^10.4.21",
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
+    "ethereumjs-util": "^7.1.5",
     "heroicons": "^2.2.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.508.0",
@@ -29,6 +32,7 @@
     "recharts": "^2.15.3",
     "use-debounce": "^10.0.4",
     "uuid": "^11.1.0",
+    "viem": "^2.29.4",
     "zod": "^3.24.4"
   },
   "devDependencies": {
