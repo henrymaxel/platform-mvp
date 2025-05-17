@@ -19,23 +19,6 @@ const TRACKED_COLLECTIONS = [
     },
 ];
 
-// Configure the Alchemy SDK
-const config = {
-    api: process.env.ALCHEMY_API_KEY,
-    network: Network.ETH_MAINNET,
-}
-
-const alchemy = new Alchemy(config);
-
-interface WalletConnectionData {
-    address: string;
-    chainId: number;
-    walletType: string;
-    message: string;
-    signature: string;
-    timestamp: number;
-}
-
 /**
  * Connect a wallet to a user account
  */
@@ -147,6 +130,7 @@ export async function connectWallet(data: {
         throw error;
     }
 }
+
 /**
  * Get connected wallets for the current user
  */
@@ -343,7 +327,7 @@ async function verifyNFTsForWallet(
                 
                 // Process each NFT in the collection
                 for (const nft of collectionNFTs) {
-                    const tokenId = parseInt(nft.tokenId, 16).toString();
+                    const tokenId = nft.tokenId.toString();
                     
                     // Check if this NFT is already in the database
                     const existingNft = await sql`
@@ -420,44 +404,5 @@ async function verifyNFTsForWallet(
         console.error('Failed to verify NFTs:', error);
         // Don't throw here as this is an async background task
         return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-}
-
-
-/**
- * Manually trigger verification of MAYC NFTs for a wallet
- */
-export async function verifyMAYC(walletId: string) {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-        throw new UnauthorizedError('You must be logged in to verify NFTs');
-    }
-
-    try {
-        // Get wallet details
-        const wallet = await sql`
-      SELECT wallet_address, chain_id
-      FROM user_wallets
-      WHERE id = ${walletId}
-      AND user_id = ${session.user.id}
-    `;
-
-        if (wallet.length === 0) {
-            throw new BadRequestError('Wallet not found or not owned by user');
-        }
-
-        // Verify MAYC NFTs
-        await verifyNFTsForWallet(
-            session.user.id,
-            wallet[0].wallet_address,
-            wallet[0].chain_id,
-            walletId
-        );
-
-        return { success: true };
-    } catch (error) {
-        console.error('Failed to verify MAYC NFTs:', error);
-        throw error;
     }
 }

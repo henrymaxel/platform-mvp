@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Edit, User } from 'lucide-react';
+import { ArrowLeft, Save, Edit, User, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { getUserNFTs, updateNFTCharacter } from '@/app/lib/actions/assets';
 import LoadingDashboard from '../../loading';
+import NftImage from '@/app/ui/NFTImage';
 
 // Define types locally for client component 
 interface NFTCharacter {
@@ -18,6 +19,11 @@ interface NFTCharacter {
     character_bio: string;
     image_url: string;
     wallet_address: string;
+    token_metadata: any; // Full metadata for additional info
+    attributes: Array<{
+        trait_type: string;
+        value: string;
+    }>;
 }
 
 export default function AssetsPage() {
@@ -31,6 +37,7 @@ export default function AssetsPage() {
     });
     const [isSaving, setIsSaving] = useState(false);
     const [success, setSuccess] = useState<string | null>(null);
+    const [selectedNFT, setSelectedNFT] = useState<NFTCharacter | null>(null);
 
     const router = useRouter();
     const { data: session, status } = useSession();
@@ -93,6 +100,35 @@ export default function AssetsPage() {
         }
     };
 
+    const getProperImageUrl = (url: string | null) => {
+        console.log("CURRENT NFT URL IS: ", url);
+        if (!url) return '/fallback_avatar.png';
+
+        // Add proper fallback for Alchemy CDN URLs
+        if (url.includes('nft-cdn.alchemy.com')) {
+            // Try to ensure HTTPS and add any necessary parameters
+            return url.startsWith('http://')
+                ? url.replace('http://', 'https://')
+                : url;
+        }
+
+        // Handle IPFS URLs
+        if (url.startsWith('ipfs://')) {
+            return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
+        }
+
+        // Handle HTTP URLs that might lack https
+        if (url.startsWith('http://')) {
+            return url.replace('http://', 'https://');
+        }
+
+        return url;
+    };
+
+    const handleNFTClick = (nft: NFTCharacter) => {
+        setSelectedNFT(nft);
+    };
+
     if (status === 'loading' || loading) {
         return <LoadingDashboard />;
     }
@@ -138,21 +174,27 @@ export default function AssetsPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {nfts.map((nft) => (
-                            <div key={nft.id} className="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+                            <div
+                                key={nft.id}
+                                className="bg-gray-800 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:shadow-xl transition-all"
+                                onClick={() => handleNFTClick(nft)}
+                            >
                                 <div className="relative">
                                     <div className="aspect-square w-full h-64 md:h-80 bg-gray-700 relative">
                                         {nft.image_url ? (
-                                            <Image
-                                                src={nft.image_url}
-                                                alt={nft.character_name || `${nft.collection_name} #${nft.token_id}`}
-                                                fill
-                                                objectFit="cover"
-                                                unoptimized
-                                            />
-                                        ) : (
-                                            <div className="flex items-center justify-center h-full">
-                                                <User size={64} className="text-gray-500" />
+                                            <div className="aspect-square w-full h-64 md:h-80 bg-gray-700 relative">
+                                                <NftImage
+                                                    imageUrl={nft.image_url}
+                                                    alt={nft.character_name || `${nft.collection_name} #${nft.token_id}`}
+                                                />
                                             </div>
+                                        ) : (
+                                            <>
+                                                {console.log('No image URL for NFT:', nft.token_id)}
+                                                <div className="flex items-center justify-center h-full">
+                                                    <User size={64} className="text-gray-500" />
+                                                </div>
+                                            </>
                                         )}
                                     </div>
                                     <div className="absolute top-4 right-4 bg-gray-900 bg-opacity-75 px-3 py-1 rounded-full text-sm">
@@ -181,7 +223,10 @@ export default function AssetsPage() {
 
                                         {editingNFT !== nft.id ? (
                                             <button
-                                                onClick={() => handleEdit(nft)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // Prevent opening the modal
+                                                    handleEdit(nft);
+                                                }}
                                                 className="p-2 hover:bg-gray-700 rounded"
                                                 title="Edit Character"
                                             >
@@ -190,13 +235,19 @@ export default function AssetsPage() {
                                         ) : (
                                             <div className="flex space-x-2">
                                                 <button
-                                                    onClick={handleCancel}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // Prevent opening the modal
+                                                        handleCancel();
+                                                    }}
                                                     className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
                                                 >
                                                     Cancel
                                                 </button>
                                                 <button
-                                                    onClick={() => handleSave(nft.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // Prevent opening the modal
+                                                        handleSave(nft.id);
+                                                    }}
                                                     disabled={isSaving}
                                                     className="px-3 py-1 bg-myred-600 hover:bg-myred-700 rounded text-sm flex items-center"
                                                 >
@@ -225,6 +276,7 @@ export default function AssetsPage() {
                                                 rows={4}
                                                 className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none"
                                                 placeholder="Write a bio for your character..."
+                                                onClick={(e) => e.stopPropagation()} // Prevent opening the modal
                                             />
                                         ) : (
                                             <p className="text-sm text-gray-300">
@@ -246,6 +298,93 @@ export default function AssetsPage() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {selectedNFT && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-gray-800 p-6 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold">{selectedNFT.character_name || `${selectedNFT.collection_name} #${selectedNFT.token_id}`}</h2>
+                                <button
+                                    onClick={() => setSelectedNFT(null)}
+                                    className="p-2 hover:bg-gray-700 rounded"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Image */}
+                                <div className="bg-gray-700 rounded-lg overflow-hidden aspect-square relative">
+                                    {selectedNFT.image_url ? (
+                                        <div className="bg-gray-700 rounded-lg overflow-hidden aspect-square relative">
+                                            <NftImage
+                                                imageUrl={selectedNFT.image_url}
+                                                alt={selectedNFT.character_name || `${selectedNFT.collection_name} #${selectedNFT.token_id}`}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full">
+                                            <User size={96} className="text-gray-500" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Details */}
+                                <div>
+                                    <h3 className="text-lg font-semibold mb-4">Attributes</h3>
+
+                                    {selectedNFT.attributes && selectedNFT.attributes.length > 0 ? (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {selectedNFT.attributes.map((attr, index) => (
+                                                <div key={index} className="bg-gray-700 p-3 rounded-lg">
+                                                    <div className="text-sm text-gray-400">{attr.trait_type}</div>
+                                                    <div className="font-medium">{attr.value}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-400">No attributes available</p>
+                                    )}
+
+                                    <div className="mt-6">
+                                        <h3 className="text-lg font-semibold mb-4">Character Bio</h3>
+                                        <textarea
+                                            value={selectedNFT.character_bio || ''}
+                                            onChange={(e) => {
+                                                setEditData({
+                                                    character_name: selectedNFT.character_name || '',
+                                                    character_bio: e.target.value
+                                                });
+                                            }}
+                                            rows={4}
+                                            className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-myred-500 focus:outline-none"
+                                            placeholder="Write a bio for your character..."
+                                        />
+                                    </div>
+
+                                    <div className="mt-4 flex justify-end space-x-2">
+                                        <button
+                                            onClick={() => setSelectedNFT(null)}
+                                            className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                handleSave(selectedNFT.id);
+                                                setSelectedNFT(null);
+                                            }}
+                                            className="px-4 py-2 bg-myred-600 hover:bg-myred-700 rounded flex items-center"
+                                        >
+                                            <Save size={16} className="mr-1" />
+                                            Save
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
