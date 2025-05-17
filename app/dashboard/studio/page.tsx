@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Save, 
+import {
+  Save,
   Bold,
   Italic,
   Underline,
@@ -24,23 +24,25 @@ import {
   FolderPlus,
   Download,
   ArrowUpFromLine,
+  Users
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useDebounce } from '@/app/hooks/useDebounce';
 import { MarkdownEditor } from '@/app/ui/Editor/MarkDownEditor';
 import NewProjectDialog from '@/app/ui/Editor/NewProjectDialog';
 import DeleteProjectDialog from '@/app/ui/Editor/DeleteProjectDialog';
-import { 
-  getProjects, 
-  createProject as createProjectAction, 
-  deleteProject as deleteProjectAction 
+import {
+  getProjects,
+  createProject as createProjectAction,
+  deleteProject as deleteProjectAction
 } from '@/app/lib/actions/projects';
-import { 
-  createChapter as createChapterAction, 
-  updateChapter as updateChapterAction 
+import {
+  createChapter as createChapterAction,
+  updateChapter as updateChapterAction
 } from '@/app/lib/actions/chapters';
 import LoadingStudio from './loading';
 import PublishDialog from '@/app/ui/Editor/PublishDialog';
+import AssetSelector from '@/app/ui/Editor/AssetSelector';
 
 
 // Types
@@ -70,7 +72,7 @@ interface SubscriptionInfo {
 
 export default function WritingStudio() {
   const { data: session } = useSession();
-  
+
   // State
   const [projects, setProjects] = useState<Project[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
@@ -82,12 +84,13 @@ export default function WritingStudio() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
-  
+  const [showAssetSelector, setShowAssetSelector] = useState(false);
+
   // UI State
   const [isDocumentOutlineCollapsed, setIsDocumentOutlineCollapsed] = useState(false);
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
   const [expandedProjects, setExpandedProjects] = useState<string[]>([]);
-  
+
   // Dialog states
   const [showChapterDialog, setShowChapterDialog] = useState(false);
   const [newChapterTitle, setNewChapterTitle] = useState('');
@@ -114,10 +117,10 @@ export default function WritingStudio() {
   const wordCount = useMemo(() => {
     return content.trim().split(/\s+/).filter(word => word.length > 0).length;
   }, [content]);
-  
+
   const totalProjectWords = useMemo(() => {
     if (!activeProject) return 0;
-    
+
     return activeProject.chapters.reduce((sum, ch) => {
       // If this is the active chapter, use the current word count instead of the saved count
       if (activeChapter && ch.id === activeChapter.id) {
@@ -126,14 +129,14 @@ export default function WritingStudio() {
       return sum + ch.words;
     }, 0);
   }, [activeProject, activeChapter, wordCount]);
-  
-  const completionPercentage = activeProject?.word_count_goal 
+
+  const completionPercentage = activeProject?.word_count_goal
     ? Math.min(100, Math.round((totalProjectWords / activeProject.word_count_goal) * 100))
     : 0;
 
   // Check if user can create more projects
-  const canCreateMoreProjects = subscription 
-    ? subscription.current_project_count < subscription.max_project_count 
+  const canCreateMoreProjects = subscription
+    ? subscription.current_project_count < subscription.max_project_count
     : false;
 
   // Fetch projects on mount
@@ -161,7 +164,7 @@ export default function WritingStudio() {
         const firstProject = data.projects[0];
         setActiveProject(firstProject);
         setExpandedProjects([firstProject.id]);
-      
+
         if (firstProject.chapters && firstProject.chapters.length > 0) {
           const firstChapter = firstProject.chapters[0];
           setActiveChapter(firstChapter);
@@ -185,7 +188,7 @@ export default function WritingStudio() {
       formData.append('title', projectData.title);
       formData.append('description', projectData.description);
       formData.append('word_count_goal', projectData.word_count_goal.toString());
-      
+
       // Call the imported createProjectAction
       await createProjectAction(formData);
 
@@ -230,32 +233,32 @@ export default function WritingStudio() {
 
   const saveContent = async () => {
     if (!activeChapter || !activeProject) return;
-    
+
     setIsSaving(true);
-    
+
     try {
       // Convert to FormData
       const formData = new FormData();
       formData.append('content', content);
       formData.append('word_count', wordCount.toString());
-      
+
       // Call the updateChapterAction
       await updateChapterAction(activeChapter.id, formData);
-      
+
       setLastSaved(new Date());
-      
+
       // Update local state
       setActiveChapter(prev => prev ? { ...prev, content, words: wordCount } : null);
-      setProjects(prev => prev.map(proj => 
-        proj.id === activeProject.id 
+      setProjects(prev => prev.map(proj =>
+        proj.id === activeProject.id
           ? {
-              ...proj,
-              chapters: proj.chapters.map(ch => 
-                ch.id === activeChapter.id 
-                  ? { ...ch, content, words: wordCount }
-                  : ch
-              )
-            }
+            ...proj,
+            chapters: proj.chapters.map(ch =>
+              ch.id === activeChapter.id
+                ? { ...ch, content, words: wordCount }
+                : ch
+            )
+          }
           : proj
       ));
     } catch (error) {
@@ -267,12 +270,12 @@ export default function WritingStudio() {
 
   const addNewChapter = async () => {
     if (!activeProject) return;
-    
+
     setNewChapterTitle(`Chapter ${activeProject.chapters.length + 1}`);
     setShowChapterDialog(true);
   };
 
-  const createChapter = async () => { 
+  const createChapter = async () => {
     if (!activeProject || !newChapterTitle.trim()) return;
 
     try {
@@ -281,17 +284,17 @@ export default function WritingStudio() {
       formData.append('project_id', activeProject.id);
       formData.append('title', newChapterTitle.trim());
       formData.append('chapter_number', (activeProject.chapters.length + 1).toString());
-      
+
       // Call the imported createChapterAction
       const newChapter = await createChapterAction(formData);
 
       // Update local state
-      setProjects(prev => prev.map(proj => 
-        proj.id === activeProject.id 
+      setProjects(prev => prev.map(proj =>
+        proj.id === activeProject.id
           ? {
-              ...proj,
-              chapters: [...proj.chapters, newChapter]
-            }
+            ...proj,
+            chapters: [...proj.chapters, newChapter]
+          }
           : proj
       ));
 
@@ -320,22 +323,22 @@ export default function WritingStudio() {
       // Convert to FormData
       const formData = new FormData();
       formData.append('title', titleToUpdate.trim());
-      
+
       // Call the updateChapterAction
       await updateChapterAction(chapterId, formData);
 
       // Update local state
-      setProjects(prev => prev.map(proj => 
-        proj.id === activeProject.id 
-        ? {
+      setProjects(prev => prev.map(proj =>
+        proj.id === activeProject.id
+          ? {
             ...proj,
-            chapters: proj.chapters.map(ch => 
+            chapters: proj.chapters.map(ch =>
               ch.id === chapterId
                 ? { ...ch, title: titleToUpdate.trim() }
                 : ch
             )
           }
-        : proj
+          : proj
       ));
 
       // Update active chapter
@@ -346,7 +349,7 @@ export default function WritingStudio() {
       // Update active project
       setActiveProject(prev => prev ? {
         ...prev,
-        chapters: prev.chapters.map(ch => 
+        chapters: prev.chapters.map(ch =>
           ch.id === chapterId
             ? { ...ch, title: titleToUpdate.trim() }
             : ch
@@ -404,14 +407,14 @@ export default function WritingStudio() {
     if (activeChapter && content !== activeChapter.content) {
       await saveContent();
     }
-    
+
     setActiveChapter(chapter);
     setContent(chapter.content || '');
   };
 
   const toggleProject = (projectId: string) => {
-    setExpandedProjects(prev => 
-      prev.includes(projectId) 
+    setExpandedProjects(prev =>
+      prev.includes(projectId)
         ? prev.filter(id => id !== projectId)
         : [...prev, projectId]
     );
@@ -419,7 +422,7 @@ export default function WritingStudio() {
 
   const formatLastSaved = () => {
     if (!lastSaved) return 'Not saved yet';
-    
+
     const diff = Math.floor((Date.now() - lastSaved.getTime()) / 1000);
     if (diff < 60) return 'Just now';
     if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
@@ -428,10 +431,10 @@ export default function WritingStudio() {
 
   const handleProjectSelect = (project: Project) => {
     setActiveProject(project);
-    setExpandedProjects(prev => 
+    setExpandedProjects(prev =>
       prev.includes(project.id) ? prev : [...prev, project.id]
     );
-    
+
     // Set first chapter as active
     if (project.chapters && project.chapters.length > 0) {
       const firstChapter = project.chapters[0];
@@ -499,7 +502,7 @@ export default function WritingStudio() {
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <div className="text-myred-500 mb-4">Error: {error}</div>
-          <button 
+          <button
             onClick={() => fetchProjects()}
             className="px-4 py-2 bg-myred-600 hover:bg-myred-700 rounded"
           >
@@ -509,281 +512,284 @@ export default function WritingStudio() {
       </div>
     );
   }
-  
+
   if (isLoading) {
     <LoadingStudio />
   }
 
-return (
-  <div className="flex h-full overflow-hidden border-t border-l border-myred-800">
-    {/* Document Outline Panel */}
-    <div className={`${isDocumentOutlineCollapsed ? 'w-12' : 'w-64'} bg-gray-800 border-r border-gray-700 flex flex-col transition-all duration-300`}>
-      <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-        {!isDocumentOutlineCollapsed && (
-          <h2 className="text-lg font-bold">Document Outline</h2>
-        )}
-        <button
-          onClick={() => setIsDocumentOutlineCollapsed(!isDocumentOutlineCollapsed)}
-          className="p-1 hover:bg-gray-700 rounded ml-auto"
-        >
-          {isDocumentOutlineCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-        </button>
-      </div>
-      
-      {!isDocumentOutlineCollapsed && (
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 overflow-y-auto p-4">
-            {/* Subscription info */}
-            {subscription && (
-              <div className="bg-gray-700 p-3 rounded mb-4 text-sm">
-                <div className="font-semibold">{subscription.tier_name} Plan</div>
-                <div className="text-gray-300">
-                  {subscription.current_project_count} / {subscription.max_project_count} projects
-                </div>
-                <div className="w-full bg-gray-600 rounded-full h-2 mt-2">
-                  <div 
-                    className="bg-myred-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(subscription.current_project_count / subscription.max_project_count) * 100}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {projects.length === 0 ? (
-              <div className="text-center text-gray-400 py-8">
-                <p>No projects found.</p>
-                <p className="mt-2">Click "New Project" below to create your first project</p>
-              </div>
-            ) : (
-              <>
-                {projects.map((project) => (
-                  <div key={project.id} className="mb-4 relative">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center flex-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleProject(project.id);
-                          }}
-                          className="p-1 hover:bg-gray-700 rounded"
-                        >
-                          <ChevronDown 
-                            size={16} 
-                            className={`transition-transform ${
-                              expandedProjects.includes(project.id) ? '' : '-rotate-90'
-                            }`}
-                          />
-                        </button>
-                        <button
-                          onClick={() => handleProjectSelect(project)}
-                          className="flex items-center hover:text-gray-300 transition-colors flex-1"
-                        >
-                          <FolderOpen size={16} className="mr-2 text-yellow-500" />
-                          <span className={`font-semibold ${
-                            activeProject?.id === project.id ? 'text-myred-500' : ''
-                          }`}>{project.title}</span>
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowProjectMenu(showProjectMenu === project.id ? null : project.id);
-                          }}
-                          className="p-1 hover:bg-gray-700 rounded"
-                        >
-                          <MoreVertical size={14} />
-                        </button>
-                        {showProjectMenu === project.id && (
-                          <div className="absolute right-0 top-8 bg-gray-700 rounded shadow-lg py-1 z-10 w-32">
-                            <button
-                              onClick={() => {
-                                setProjectToDelete(project);
-                                setShowDeleteDialog(true);
-                                setShowProjectMenu(null);
-                              }}
-                              className="w-full px-3 py-2 text-left hover:bg-gray-600 text-myred-400 flex items-center"
-                            >
-                              <Trash2 size={14} className="mr-2" />
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {expandedProjects.includes(project.id) && (
-                      <div className="ml-6 space-y-1">
-                        {project.chapters && project.chapters.length > 0 ? (
-                          project.chapters.map((chapter) => (
-                            <button
-                              key={chapter.id}
-                              onClick={() => switchChapter(chapter)}
-                              className={`flex items-center justify-between w-full p-2 rounded text-left transition-colors ${
-                                activeChapter?.id === chapter.id 
-                                  ? 'bg-myred-600 text-white' 
-                                  : 'hover:bg-gray-700'
-                              }`}
-                            >
-                              <div className="flex items-center">
-                                <FileText size={14} className="mr-2" />
-                                <div>
-                                  <div className="text-sm">{chapter.title}</div>
-                                  <div className="text-xs text-gray-400">{chapter.words} words</div>
-                                </div>
-                              </div>
-                              {chapter.status === 'in-progress' && (
-                                <span className="text-xs bg-yellow-600 text-yellow-100 px-2 py-0.5 rounded">
-                                  In progress
-                                </span>
-                              )}
-                              {chapter.status === 'outline' && (
-                                <span className="text-xs text-gray-400">
-                                  Outline only
-                                </span>
-                              )}
-                            </button>
-                          ))
-                        ) : (
-                          <div className="text-sm text-gray-400 p-2">
-                            No chapters yet
-                          </div>
-                        )}
-                        {activeProject?.id === project.id && (
-                          <button 
-                            onClick={addNewChapter}
-                            className="w-full mt-2 p-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors flex items-center">
-                            <Plus size={14} className="mr-2" />
-                            Add chapter
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-          
-          {/* Sticky New Project button at the bottom */}
-          <div className="p-4 border-t border-gray-700">
-            <button 
-              onClick={() => setShowNewProjectDialog(true)}
-              className="w-full p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors flex items-center justify-center"
-            >
-              <FolderPlus size={16} className="mr-2" />
-              New Project
-            </button>
-          </div>
+  return (
+    <div className="flex h-full overflow-hidden border-t border-l border-myred-800">
+      {/* Document Outline Panel */}
+      <div className={`${isDocumentOutlineCollapsed ? 'w-12' : 'w-64'} bg-gray-800 border-r border-gray-700 flex flex-col transition-all duration-300`}>
+        <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+          {!isDocumentOutlineCollapsed && (
+            <h2 className="text-lg font-bold">Document Outline</h2>
+          )}
+          <button
+            onClick={() => setIsDocumentOutlineCollapsed(!isDocumentOutlineCollapsed)}
+            className="p-1 hover:bg-gray-700 rounded ml-auto"
+          >
+            {isDocumentOutlineCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          </button>
         </div>
-      )}
-    </div>
+
+        {!isDocumentOutlineCollapsed && (
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 overflow-y-auto p-4">
+              {/* Subscription info */}
+              {subscription && (
+                <div className="bg-gray-700 p-3 rounded mb-4 text-sm">
+                  <div className="font-semibold">{subscription.tier_name} Plan</div>
+                  <div className="text-gray-300">
+                    {subscription.current_project_count} / {subscription.max_project_count} projects
+                  </div>
+                  <div className="w-full bg-gray-600 rounded-full h-2 mt-2">
+                    <div
+                      className="bg-myred-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(subscription.current_project_count / subscription.max_project_count) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {projects.length === 0 ? (
+                <div className="text-center text-gray-400 py-8">
+                  <p>No projects found.</p>
+                  <p className="mt-2">Click "New Project" below to create your first project</p>
+                </div>
+              ) : (
+                <>
+                  {projects.map((project) => (
+                    <div key={project.id} className="mb-4 relative">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center flex-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleProject(project.id);
+                            }}
+                            className="p-1 hover:bg-gray-700 rounded"
+                          >
+                            <ChevronDown
+                              size={16}
+                              className={`transition-transform ${expandedProjects.includes(project.id) ? '' : '-rotate-90'
+                                }`}
+                            />
+                          </button>
+                          <button
+                            onClick={() => handleProjectSelect(project)}
+                            className="flex items-center hover:text-gray-300 transition-colors flex-1"
+                          >
+                            <FolderOpen size={16} className="mr-2 text-yellow-500" />
+                            <span className={`font-semibold ${activeProject?.id === project.id ? 'text-myred-500' : ''
+                              }`}>{project.title}</span>
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowProjectMenu(showProjectMenu === project.id ? null : project.id);
+                            }}
+                            className="p-1 hover:bg-gray-700 rounded"
+                          >
+                            <MoreVertical size={14} />
+                          </button>
+                          {showProjectMenu === project.id && (
+                            <div className="absolute right-0 top-8 bg-gray-700 rounded shadow-lg py-1 z-10 w-32">
+                              <button
+                                onClick={() => {
+                                  setProjectToDelete(project);
+                                  setShowDeleteDialog(true);
+                                  setShowProjectMenu(null);
+                                }}
+                                className="w-full px-3 py-2 text-left hover:bg-gray-600 text-myred-400 flex items-center"
+                              >
+                                <Trash2 size={14} className="mr-2" />
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {expandedProjects.includes(project.id) && (
+                        <div className="ml-6 space-y-1">
+                          {project.chapters && project.chapters.length > 0 ? (
+                            project.chapters.map((chapter) => (
+                              <button
+                                key={chapter.id}
+                                onClick={() => switchChapter(chapter)}
+                                className={`flex items-center justify-between w-full p-2 rounded text-left transition-colors ${activeChapter?.id === chapter.id
+                                  ? 'bg-myred-600 text-white'
+                                  : 'hover:bg-gray-700'
+                                  }`}
+                              >
+                                <div className="flex items-center">
+                                  <FileText size={14} className="mr-2" />
+                                  <div>
+                                    <div className="text-sm">{chapter.title}</div>
+                                    <div className="text-xs text-gray-400">{chapter.words} words</div>
+                                  </div>
+                                </div>
+                                {chapter.status === 'in-progress' && (
+                                  <span className="text-xs bg-yellow-600 text-yellow-100 px-2 py-0.5 rounded">
+                                    In progress
+                                  </span>
+                                )}
+                                {chapter.status === 'outline' && (
+                                  <span className="text-xs text-gray-400">
+                                    Outline only
+                                  </span>
+                                )}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="text-sm text-gray-400 p-2">
+                              No chapters yet
+                            </div>
+                          )}
+                          {activeProject?.id === project.id && (
+                            <button
+                              onClick={addNewChapter}
+                              className="w-full mt-2 p-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors flex items-center">
+                              <Plus size={14} className="mr-2" />
+                              Add chapter
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+
+            {/* Sticky New Project button at the bottom */}
+            <div className="p-4 border-t border-gray-700">
+              <button
+                onClick={() => setShowNewProjectDialog(true)}
+                className="w-full p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors flex items-center justify-center"
+              >
+                <FolderPlus size={16} className="mr-2" />
+                New Project
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Main Editor Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Editor Toolbar */}
         <div className="bg-gray-800 border-b border-gray-700 p-2 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button 
+            <button
               onClick={saveContent}
               disabled={isSaving || !activeChapter}
-              className={`flex items-center space-x-2 px-3 py-1.5 rounded text-sm ${
-                isSaving || !activeChapter
-                  ? 'bg-gray-600 opacity-50' 
-                  : 'bg-myred-600 hover:bg-myred-700'
-              }`}
-            >
-              <Save size={16} />
-              <span>{isSaving ? 'Saving...' : 'Save'}</span>
-            </button>
-            
-            <button
-              onClick={handleExport}
-              disabled={!activeChapter}
-              className={`flex items-center space-x-2 px-3 py-1.5 rounded text-sm ${
-                !activeChapter
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded text-sm ${isSaving || !activeChapter
                 ? 'bg-gray-600 opacity-50'
                 : 'bg-myred-600 hover:bg-myred-700'
                 }`}
             >
-              <Download size={16}/>
+              <Save size={16} />
+              <span>{isSaving ? 'Saving...' : 'Save'}</span>
+            </button>
+
+            <button
+              onClick={handleExport}
+              disabled={!activeChapter}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded text-sm ${!activeChapter
+                ? 'bg-gray-600 opacity-50'
+                : 'bg-myred-600 hover:bg-myred-700'
+                }`}
+            >
+              <Download size={16} />
               Export
             </button>
 
-          {activeProject && activeProject.chapters && activeProject.chapters.length > 0 && (
             <button
-              onClick={() => setShowPublishDialog(true)}
-              className="flex items-center space-x-2 px-3 py-1.5 rounded text-sm bg-green-600 hover:bg-green-700"
+              onClick={() => setShowAssetSelector(true)}
+              className="flex items-center space-x-2 px-3 py-1.5 rounded text-sm bg-purple-600 hover:bg-purple-700"
             >
-              <ArrowUpFromLine size={16}/>
-              <span>Publish</span>
+              <Users size={16} />
+              <span>Characters</span>
             </button>
-          )}
+
+            {activeProject && activeProject.chapters && activeProject.chapters.length > 0 && (
+              <button
+                onClick={() => setShowPublishDialog(true)}
+                className="flex items-center space-x-2 px-3 py-1.5 rounded text-sm bg-green-600 hover:bg-green-700"
+              >
+                <ArrowUpFromLine size={16} />
+                <span>Publish</span>
+              </button>
+            )}
 
             {activeChapter && (
               <div className="hidden md:flex items-center space-x-2 ml-4">
-                <button 
+                <button
                   onClick={() => handleToolbarAction('h1')}
-                  className="p-1.5 hover:bg-gray-700 rounded" 
+                  className="p-1.5 hover:bg-gray-700 rounded"
                   title="Heading 1"
                 >
                   <Heading1 size={16} />
                 </button>
-                <button 
+                <button
                   onClick={() => handleToolbarAction('h2')}
-                  className="p-1.5 hover:bg-gray-700 rounded" 
+                  className="p-1.5 hover:bg-gray-700 rounded"
                   title="Heading 2"
                 >
                   <Heading2 size={16} />
                 </button>
-                <button 
+                <button
                   onClick={() => handleToolbarAction('h3')}
-                  className="p-1.5 hover:bg-gray-700 rounded" 
+                  className="p-1.5 hover:bg-gray-700 rounded"
                   title="Heading 3"
                 >
                   <Heading3 size={16} />
                 </button>
                 <span className="text-gray-400">|</span>
-                <button 
+                <button
                   onClick={() => handleToolbarAction('bold')}
-                  className="p-1.5 hover:bg-gray-700 rounded" 
+                  className="p-1.5 hover:bg-gray-700 rounded"
                   title="Bold"
                 >
                   <Bold size={16} />
                 </button>
-                <button 
+                <button
                   onClick={() => handleToolbarAction('italic')}
-                  className="p-1.5 hover:bg-gray-700 rounded" 
+                  className="p-1.5 hover:bg-gray-700 rounded"
                   title="Italic"
                 >
                   <Italic size={16} />
                 </button>
-                <button 
+                <button
                   onClick={() => handleToolbarAction('underline')}
-                  className="p-1.5 hover:bg-gray-700 rounded" 
+                  className="p-1.5 hover:bg-gray-700 rounded"
                   title="Underline"
                 >
                   <Underline size={16} />
                 </button>
                 <span className="text-gray-400">|</span>
-                <button 
+                <button
                   onClick={() => handleToolbarAction('quote')}
-                  className="p-1.5 hover:bg-gray-700 rounded" 
+                  className="p-1.5 hover:bg-gray-700 rounded"
                   title="Quote"
                 >
                   <Quote size={16} />
                 </button>
                 <span className="text-gray-400">|</span>
-                <button 
+                <button
                   onClick={() => handleToolbarAction('ul')}
-                  className="p-1.5 hover:bg-gray-700 rounded" 
+                  className="p-1.5 hover:bg-gray-700 rounded"
                   title="Bullet List"
                 >
                   <List size={16} />
                 </button>
-                <button 
+                <button
                   onClick={() => handleToolbarAction('ol')}
-                  className="p-1.5 hover:bg-gray-700 rounded" 
+                  className="p-1.5 hover:bg-gray-700 rounded"
                   title="Numbered List"
                 >
                   <ListOrdered size={16} />
@@ -853,7 +859,7 @@ return (
                 <div className="text-center text-gray-400 mt-20">
                   <h2 className="text-xl font-semibold mb-4">{activeProject.title}</h2>
                   <p className="mb-6">{activeProject.description}</p>
-                  <button 
+                  <button
                     onClick={addNewChapter}
                     className="px-4 py-2 bg-myred-600 hover:bg-myred-700 rounded flex items-center mx-auto"
                   >
@@ -869,7 +875,7 @@ return (
             )}
           </div>
         </div>
-        
+
 
         {/* Bottom Status Bar */}
         <div className="bg-gray-800 border-t border-gray-700 px-4 py-2 flex items-center justify-between text-sm">
@@ -880,8 +886,8 @@ return (
               <>
                 <span>Goal: {activeProject.word_count_goal.toLocaleString()}</span>
                 <div className="w-32 bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-myred-500 h-2 rounded-full transition-all duration-300" 
+                  <div
+                    className="bg-myred-500 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${completionPercentage}%` }}
                   />
                 </div>
@@ -905,7 +911,7 @@ return (
             <h2 className="text-lg font-bold">AI Tools</h2>
           )}
         </div>
-        
+
         {!isRightPanelCollapsed && (
           <div className="flex-1 overflow-y-auto p-4">
             {/* AI Tools Section */}
@@ -1037,18 +1043,26 @@ return (
 
       {showPublishDialog && activeProject && (
         <PublishDialog
-        isOpen={showPublishDialog}
-        onClose={() => setShowPublishDialog(false)}
-        projectId={activeProject.id}
-        projectTitle={activeProject.title}
-        wordCount={totalProjectWords}
-        onSuccess={() => {
-        // This would typically refetch projects or update the UI
-        // You could also show a success message
-        alert('Your work has been successfully published!');
-      }}
-      />
-    )}
+          isOpen={showPublishDialog}
+          onClose={() => setShowPublishDialog(false)}
+          projectId={activeProject.id}
+          projectTitle={activeProject.title}
+          wordCount={totalProjectWords}
+          onSuccess={() => {
+            // This would typically refetch projects or update the UI
+            // You could also show a success message
+            alert('Your work has been successfully published!');
+          }}
+        />
+      )}
+
+      {activeProject && showAssetSelector && (
+        <AssetSelector
+          projectId={activeProject.id}
+          isOpen={showAssetSelector}
+          onClose={() => setShowAssetSelector(false)}
+        />
+      )}
     </div>
   );
 }

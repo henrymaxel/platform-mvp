@@ -126,3 +126,38 @@ export type LibraryMetadata = {
   created_at: string;
   updated_at: string;
 };
+
+export type NFTCharacterProfile = {
+  id: string;
+  asset_id: string;
+  user_id: string;
+  character_name: string;
+  character_description: string;
+  personality_traits: Record<string, any>;
+  backstory: string;
+  role_in_story: string;
+  visual_appearance: string;
+  is_protagonist: boolean;
+  is_antagonist: boolean;
+  is_supporting: boolean;
+  is_complete: boolean; // New field
+  created_at: string;
+  updated_at: string;
+};
+
+export type NFTWithProfile = {
+  id: string;
+  collection_name: string;
+  token_id: string;
+  image_url: string;
+  wallet_address: string;
+  character_name: string;
+  character_bio: string;
+  profile?: NFTCharacterProfile;
+  is_profile_complete: boolean;
+  token_metadata: any;
+  attributes: Array<{
+    trait_type: string;
+    value: string;
+  }>;
+};

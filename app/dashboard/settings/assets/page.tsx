@@ -9,6 +9,8 @@ import { useSession } from 'next-auth/react';
 import { getUserNFTs, updateNFTCharacter } from '@/app/lib/actions/assets';
 import LoadingDashboard from '../../loading';
 import NftImage from '@/app/ui/NFTImage';
+import { getCharacterProfile } from '@/app/lib/actions/characterProfiles';
+import CharacterProfileEditor from '@/app/ui/Editor/CharacterProfileEditor';
 
 // Define types locally for client component 
 interface NFTCharacter {
@@ -38,6 +40,10 @@ export default function AssetsPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [success, setSuccess] = useState<string | null>(null);
     const [selectedNFT, setSelectedNFT] = useState<NFTCharacter | null>(null);
+
+    const [selectedNFTForProfile, setSelectedNFTForProfile] = useState<NFTCharacter | null>(null);
+    const [characterProfile, setCharacterProfile] = useState<NFTCharacterProfile | null>(null);
+    const [isProfileEditorOpen, setIsProfileEditorOpen] = useState(false);
 
     const router = useRouter();
     const { data: session, status } = useSession();
@@ -100,29 +106,16 @@ export default function AssetsPage() {
         }
     };
 
-    const getProperImageUrl = (url: string | null) => {
-        console.log("CURRENT NFT URL IS: ", url);
-        if (!url) return '/fallback_avatar.png';
-
-        // Add proper fallback for Alchemy CDN URLs
-        if (url.includes('nft-cdn.alchemy.com')) {
-            // Try to ensure HTTPS and add any necessary parameters
-            return url.startsWith('http://')
-                ? url.replace('http://', 'https://')
-                : url;
+    const handleOpenProfileEditor = async (nft: NFTCharacter) => {
+        try {
+            const profile = await getCharacterProfile(nft.id);
+            setCharacterProfile(profile);
+            setSelectedNFTForProfile(nft);
+            setIsProfileEditorOpen(true);
+        } catch (error) {
+            console.error('Failed to fetch character profile:', error);
+            setError('Failed to load character profile');
         }
-
-        // Handle IPFS URLs
-        if (url.startsWith('ipfs://')) {
-            return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
-        }
-
-        // Handle HTTP URLs that might lack https
-        if (url.startsWith('http://')) {
-            return url.replace('http://', 'https://');
-        }
-
-        return url;
     };
 
     const handleNFTClick = (nft: NFTCharacter) => {
@@ -177,7 +170,7 @@ export default function AssetsPage() {
                             <div
                                 key={nft.id}
                                 className="bg-gray-800 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:shadow-xl transition-all"
-                                onClick={() => handleNFTClick(nft)}
+                                onClick={() => handleOpenProfileEditor(nft)}
                             >
                                 <div className="relative">
                                     <div className="aspect-square w-full h-64 md:h-80 bg-gray-700 relative">
@@ -383,6 +376,26 @@ export default function AssetsPage() {
                                         </button>
                                     </div>
                                 </div>
+
+                                {isProfileEditorOpen && selectedNFTForProfile && (
+                                    <CharacterProfileEditor
+                                        nftId={selectedNFTForProfile.id}
+                                        assetId={getAssetIdForNft(selectedNFTForProfile.id)} // You'd need to implement this function
+                                        profileId={characterProfile?.id}
+                                        nftImage={selectedNFTForProfile.image_url}
+                                        nftName={selectedNFTForProfile.character_name || `${selectedNFTForProfile.collection_name} #${selectedNFTForProfile.token_id}`}
+                                        initialData={characterProfile || undefined}
+                                        onClose={() => {
+                                            setIsProfileEditorOpen(false);
+                                            setSelectedNFTForProfile(null);
+                                            setCharacterProfile(null);
+                                        }}
+                                        onSave={() => {
+                                            setIsProfileEditorOpen(false);
+                                            fetchNFTs(); // Refresh the list
+                                        }}
+                                    />
+                                )}
                             </div>
                         </div>
                     </div>
