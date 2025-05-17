@@ -127,7 +127,11 @@ export async function connectWallet(data: WalletConnectionData) {
         // After connecting a wallet, initiate NFT verification in the background
         // Always check specifically for the MAYC contract address
         // This will happen asynchronously, so we don't need to await it
+
+        // Commented the verifyNFTsForWallet function
         // verifyNFTsForWallet(session.user.id, data.address, data.chainId, walletId);
+
+        // Tried a different approach which worked
         try {
             let response = await alchemy.nft.getNftsForOwner(data.address);
             const usersNFTs = response.ownedNfts.filter(
