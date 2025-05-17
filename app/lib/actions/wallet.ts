@@ -8,8 +8,16 @@ import { UnauthorizedError, BadRequestError } from '@/app/lib/errors';
 import { withAudit } from '@/app/lib/auditMiddleware';
 import { Alchemy, Network } from 'alchemy-sdk';
 
-// Hard-coded MAYC contract address - updated to MAYC instead of BAYC based on the logs
-const MAYC_CONTRACT_ADDRESS = '0xcd7ccf029cd8e4c81e18e892740ea9973238bc75';
+const TRACKED_COLLECTIONS = [
+    {
+        address: '0xcd7ccf029cd8e4c81e18e892740ea9973238bc75', 
+        name: 'Mutant Hounds: Fusion'
+    },
+    {
+        address: '0x354634c4621cdfb7a25e6486cca1e019777d841b',
+        name: 'Mutant Hounds'
+    },
+];
 
 // Configure the Alchemy SDK
 const config = {
@@ -31,7 +39,14 @@ interface WalletConnectionData {
 /**
  * Connect a wallet to a user account
  */
-export async function connectWallet(data: WalletConnectionData) {
+export async function connectWallet(data: {
+    address: string;
+    chainId: number;
+    walletType: string;
+    message: string;
+    signature: string;
+    timestamp: number;
+}) {
     const session = await auth();
 
     if (!session?.user?.id) {
@@ -53,34 +68,34 @@ export async function connectWallet(data: WalletConnectionData) {
 
         // Check if the wallet is already connected to this user
         const existingWallet = await sql`
-      SELECT id FROM user_wallets
-      WHERE user_id = ${session.user.id}
-      AND wallet_address = ${data.address.toLowerCase()}
-      AND chain_id = ${data.chainId}
-    `;
+            SELECT id FROM user_wallets
+            WHERE user_id = ${session.user.id}
+            AND wallet_address = ${data.address.toLowerCase()}
+            AND chain_id = ${data.chainId}
+        `;
 
         let walletId;
 
         if (existingWallet.length > 0) {
             // Wallet already connected, update the timestamp
             await sql`
-        UPDATE user_wallets
-        SET updated_at = NOW(),
-            is_primary = CASE 
-              WHEN (SELECT COUNT(*) FROM user_wallets WHERE user_id = ${session.user.id}) = 0
-              THEN true
-              ELSE is_primary
-            END
-        WHERE id = ${existingWallet[0].id}
-      `;
+                UPDATE user_wallets
+                SET updated_at = NOW(),
+                    is_primary = CASE 
+                      WHEN (SELECT COUNT(*) FROM user_wallets WHERE user_id = ${session.user.id}) = 0
+                      THEN true
+                      ELSE is_primary
+                    END
+                WHERE id = ${existingWallet[0].id}
+            `;
 
             walletId = existingWallet[0].id;
         } else {
             // Check if this is the first wallet for this user
             const walletCount = await sql`
-        SELECT COUNT(*) as count FROM user_wallets
-        WHERE user_id = ${session.user.id}
-      `;
+                SELECT COUNT(*) as count FROM user_wallets
+                WHERE user_id = ${session.user.id}
+            `;
 
             const isPrimary = walletCount[0].count === 0;
 
@@ -92,26 +107,25 @@ export async function connectWallet(data: WalletConnectionData) {
                 'pending',
                 async () => {
                     const walletResult = await sql`
-            INSERT INTO user_wallets (
-              user_id,
-              wallet_address,
-              chain_id,
-              wallet_type,
-              is_primary,
-              created_at,
-              updated_at
-            ) VALUES (
-              ${session.user.id},
-              ${data.address.toLowerCase()},
-              ${data.chainId},
-              ${data.walletType},
-              ${isPrimary},
-              NOW(),
-              NOW()
-            )
-            RETURNING id
-          `;
-
+                        INSERT INTO user_wallets (
+                          user_id,
+                          wallet_address,
+                          chain_id,
+                          wallet_type,
+                          is_primary,
+                          created_at,
+                          updated_at
+                        ) VALUES (
+                          ${session.user.id},
+                          ${data.address.toLowerCase()},
+                          ${data.chainId},
+                          ${data.walletType},
+                          ${isPrimary},
+                          NOW(),
+                          NOW()
+                        )
+                        RETURNING id
+                    `;
                     return walletResult[0];
                 },
                 {
@@ -124,49 +138,8 @@ export async function connectWallet(data: WalletConnectionData) {
             walletId = result.id;
         }
 
-        // After connecting a wallet, initiate NFT verification in the background
-        // Always check specifically for the MAYC contract address
-        // This will happen asynchronously, so we don't need to await it
-
-        // Commented the verifyNFTsForWallet function
-        // verifyNFTsForWallet(session.user.id, data.address, data.chainId, walletId);
-
-        // Tried a different approach which worked
-        try {
-            let response = await alchemy.nft.getNftsForOwner(data.address);
-            const usersNFTs = response.ownedNfts.filter(
-                (nft) => nft.contract.address.toLowerCase() === MAYC_CONTRACT_ADDRESS.toLowerCase()
-            );
-
-            const tokenIds = usersNFTs.map((nft) => parseInt(nft.tokenId, 10));
-            const rawMeta = usersNFTs.map((nft) => nft.raw);
-
-            for (const nft of rawMeta) {
-                const { tokenUri, metadata } = nft;
-                const { name, image, description, attributes } = metadata;
-
-                console.log(`\nName: ${name}`);
-                console.log(`Image: ${image}`);
-                console.log(`Description: ${description}`);
-                console.log(`Token URI: ${tokenUri}`);
-
-                if (Array.isArray(attributes)) {
-                    console.log('Attributes:');
-                    for (const attr of attributes) {
-                        console.log(`  - ${attr.trait_type}: ${attr.value}`);
-                    }
-                } else {
-                    console.log('No attributes found.');
-                }
-            }
-
-
-            console.log(`Found ${tokenIds.length} assets for address ${data.address}: `, tokenIds);
-            console.log(`Found metadata of assets ${tokenIds} for address ${data.address}: `, rawMeta);
-
-        } catch (error) {
-            console.error('Failed to fetch nfts for connected address: ', error);
-        }
+        // After connecting a wallet, initiate NFT verification
+        await verifyNFTsForWallet(session.user.id, data.address, walletId);
 
         return { id: walletId };
     } catch (error) {
@@ -174,7 +147,6 @@ export async function connectWallet(data: WalletConnectionData) {
         throw error;
     }
 }
-
 /**
  * Get connected wallets for the current user
  */
@@ -307,121 +279,127 @@ export async function setPrimaryWallet(walletId: string) {
  */
 async function verifyNFTsForWallet(
     userId: string,
-    walletAddress: string,
-    chainId: number,
+    walletAddress: string, 
     walletId: string
 ) {
     try {
-        console.log(`Checking for NFTs for wallet ${walletAddress}`);
-
-        // Remove the MAYC-specific filter to allow any NFT collection
-        // const contractAddresses = [MAYC_CONTRACT_ADDRESS];
-
-        // Use the Alchemy SDK to get all NFTs
-        const response = await getNftsForOwner(
-            walletAddress.toLowerCase(),
-            chainId,
-            // contractAddresses  /* Remove this parameter to get all NFTs */
-        );
-
-        const nfts = response.ownedNfts || [];
-        console.log(`Found ${nfts.length} NFTs for wallet ${walletAddress}`);
-
-        // Process each NFT
-        for (const nft of nfts) {
-            const contractAddress = nft.contract.address.toLowerCase();
-            const tokenId = nft.tokenId;
-            const tokenIdDecimal = parseInt(nft.tokenId, 16).toString();
-
-            // Check if the collection exists in our database
-            let collectionId = null;
-            const existingCollection = await sql`
-        SELECT id FROM nft_collections
-        WHERE address = ${contractAddress}
-        AND chain_id = ${chainId}
-      `;
-
-            if (existingCollection.length > 0) {
-                collectionId = existingCollection[0].id;
-            } else {
-                // Get more detailed metadata about the contract
-                const contractMetadata = await getContractMetadata(contractAddress, chainId);
-
-                // Create a new collection record
-                const collectionResult = await sql`
-          INSERT INTO nft_collections (
-            name,
-            address,
-            chain_id,
-            token_standard,
-            is_verified,
-            contract_metadata,
-            created_at,
-            updated_at
-          ) VALUES (
-            ${contractMetadata.name || nft.contract.name || 'Unknown Collection'},
-            ${contractAddress},
-            ${chainId},
-            ${nft.tokenType || 'ERC721'},
-            true,
-            ${JSON.stringify(contractMetadata)},
-            NOW(),
-            NOW()
-          )
-          RETURNING id
-        `;
-
-                collectionId = collectionResult[0].id;
-            }
-
-            // Check if the NFT already exists for this user
-            const existingNft = await sql`
-        SELECT id FROM user_nfts
-        WHERE user_id = ${userId}
-        AND collection_id = ${collectionId}
-        AND token_id = ${tokenIdDecimal}
-      `;
-
-            if (existingNft.length === 0) {
-                // Create a new NFT record
-                await sql`
-          INSERT INTO user_nfts (
-            user_id,
-            collection_id,
-            token_id,
-            wallet_id,
-            token_metadata,
-            last_verified_at,
-            created_at,
-            updated_at
-          ) VALUES (
-            ${userId},
-            ${collectionId},
-            ${tokenIdDecimal},
-            ${walletId},
-            ${JSON.stringify(nft)},
-            NOW(),
-            NOW(),
-            NOW()
-          )
-        `;
-
-                console.log(`Added new MAYC NFT #${tokenIdDecimal} for user ${userId}`);
-            } else {
-                // Update the existing NFT record
-                await sql`
-          UPDATE user_nfts
-          SET wallet_id = ${walletId},
-              token_metadata = ${JSON.stringify(nft)},
-              last_verified_at = NOW(),
-              updated_at = NOW()
-          WHERE id = ${existingNft[0].id}
-        `;
-
-                console.log(`Updated existing MAYC NFT #${tokenIdDecimal} for user ${userId}`);
+        console.log(`Checking for NFTs in wallet ${walletAddress}`);
+        
+        // Configure Alchemy
+        const config = {
+            apiKey: process.env.ALCHEMY_API_KEY,
+            network: Network.ETH_MAINNET,
+        };
+        const alchemy = new Alchemy(config);
+        
+        // Get all NFTs for the wallet
+        const response = await alchemy.nft.getNftsForOwner(walletAddress.toLowerCase());
+        
+        console.log(`Found ${response.ownedNfts.length} NFTs in wallet ${walletAddress}`);
+        
+        // Filter NFTs from tracked collections
+        for (const collection of TRACKED_COLLECTIONS) {
+            const collectionNFTs = response.ownedNfts.filter(
+                nft => nft.contract.address.toLowerCase() === collection.address.toLowerCase()
+            );
+            
+            if (collectionNFTs.length > 0) {
+                console.log(`Found ${collectionNFTs.length} NFTs from ${collection.name}`);
+                
+                // Check if collection exists in database
+                let collectionId = null;
+                const existingCollection = await sql`
+                    SELECT id FROM nft_collections
+                    WHERE address = ${collection.address.toLowerCase()}
+                `;
+                
+                if (existingCollection.length > 0) {
+                    collectionId = existingCollection[0].id;
+                } else {
+                    // Create new collection record
+                    const collectionResult = await sql`
+                        INSERT INTO nft_collections (
+                            name,
+                            address,
+                            chain_id,
+                            token_standard,
+                            is_verified,
+                            created_at,
+                            updated_at
+                        ) VALUES (
+                            ${collection.name},
+                            ${collection.address.toLowerCase()},
+                            1, -- Ethereum Mainnet
+                            'ERC721',
+                            true,
+                            NOW(),
+                            NOW()
+                        )
+                        RETURNING id
+                    `;
+                    
+                    collectionId = collectionResult[0].id;
+                }
+                
+                // Process each NFT in the collection
+                for (const nft of collectionNFTs) {
+                    const tokenId = parseInt(nft.tokenId, 16).toString();
+                    
+                    // Check if this NFT is already in the database
+                    const existingNft = await sql`
+                        SELECT id FROM user_nfts
+                        WHERE user_id = ${userId}
+                        AND collection_id = ${collectionId}
+                        AND token_id = ${tokenId}
+                    `;
+                    
+                    // Extract metadata for storage
+                    const metadata = nft.rawMetadata || {};
+                    
+                    if (existingNft.length === 0) {
+                        // Create new NFT record
+                        await sql`
+                            INSERT INTO user_nfts (
+                                user_id,
+                                collection_id,
+                                token_id,
+                                wallet_id,
+                                token_metadata,
+                                character_name,
+                                last_verified_at,
+                                created_at,
+                                updated_at
+                            ) VALUES (
+                                ${userId},
+                                ${collectionId},
+                                ${tokenId},
+                                ${walletId},
+                                ${JSON.stringify(nft)},
+                                ${metadata.name || `${collection.name} #${tokenId}`},
+                                NOW(),
+                                NOW(),
+                                NOW()
+                            )
+                        `;
+                        
+                        console.log(`Added NFT #${tokenId} from ${collection.name} for user ${userId}`);
+                    } else {
+                        // Update existing NFT
+                        await sql`
+                            UPDATE user_nfts
+                            SET wallet_id = ${walletId},
+                                token_metadata = ${JSON.stringify(nft)},
+                                last_verified_at = NOW(),
+                                updated_at = NOW()
+                            WHERE id = ${existingNft[0].id}
+                        `;
+                        
+                        console.log(`Updated NFT #${tokenId} from ${collection.name} for user ${userId}`);
+                    }
+                }
             }
         }
-
+        
         // Log the NFT verification
         await withAudit(
             userId,
@@ -429,23 +407,22 @@ async function verifyNFTsForWallet(
             'nfts',
             walletId,
             async () => {
-                return { success: true, count: nfts.length };
+                return { success: true, count: response.ownedNfts.length };
             },
             {
                 wallet_address: walletAddress.toLowerCase(),
-                chain_id: chainId,
-                nft_count: nfts.length,
-                collection: 'MAYC'
+                nft_count: response.ownedNfts.length
             }
         );
-
-        return { success: true, count: nfts.length };
+        
+        return { success: true, count: response.ownedNfts.length };
     } catch (error) {
-        console.error('Failed to verify MAYC NFTs:', error);
+        console.error('Failed to verify NFTs:', error);
         // Don't throw here as this is an async background task
         return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
+
 
 /**
  * Manually trigger verification of MAYC NFTs for a wallet

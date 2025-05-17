@@ -58,6 +58,13 @@ export default function SettingsPage() {
       icon: Wallet,
       href: '/dashboard/settings/wallet',
       color: 'text-myred-500',
+    },
+    {
+      title: 'Asset Manager',
+      description: 'Manager your verified NFT characters',
+      icon: User,
+      href: '/dashboard/settings/assets',
+      color: 'text-myred-500',
     }
   ];
 
